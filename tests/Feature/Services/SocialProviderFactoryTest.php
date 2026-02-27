@@ -63,7 +63,7 @@ test('x client validates complete credentials', function () {
 });
 
 test('bluesky client validates missing credentials', function () {
-    $client = new BlueskyClient;
+    $client = app(BlueskyClient::class);
 
     $result = $client->validateCredentials([]);
 
@@ -72,7 +72,7 @@ test('bluesky client validates missing credentials', function () {
 });
 
 test('bluesky client validates complete credentials', function () {
-    $client = new BlueskyClient;
+    $client = app(BlueskyClient::class);
 
     $result = $client->validateCredentials([
         'handle' => 'user.bsky.social',

@@ -14,6 +14,10 @@ class BlueskyClient implements SocialProviderClient
 {
     protected string $baseUrl = 'https://bsky.social/xrpc';
 
+    public function __construct(
+        protected RichTextFacetsBuilder $facetsBuilder
+    ) {}
+
     public function validateCredentials(array $credentials): ValidationResult
     {
         if (empty($credentials['handle'])) {
@@ -104,8 +108,9 @@ class BlueskyClient implements SocialProviderClient
     {
         $providerMediaIds = [];
         $embed = null;
+        $hasMedia = ! empty($media);
 
-        if (! empty($media)) {
+        if ($hasMedia) {
             $hasVideo = collect($media)->contains(fn (ProviderMediaItem $m) => $m->type === MediaType::Video);
 
             if ($hasVideo) {
@@ -137,13 +142,28 @@ class BlueskyClient implements SocialProviderClient
             ];
         }
 
+        $facetsResult = $this->facetsBuilder->build($text, fetchLinkEmbed: ! $hasMedia);
+        $facets = $facetsResult['facets'];
+        $linkEmbed = $facetsResult['linkEmbed'];
+
+        if (! $hasMedia && $linkEmbed !== null) {
+            $externalEmbed = $this->buildExternalEmbed($session, $linkEmbed);
+            if ($externalEmbed !== null) {
+                $embed = $externalEmbed;
+            }
+        }
+
         $record = [
             '$type' => 'app.bsky.feed.post',
             'text' => $text,
             'createdAt' => now()->toIso8601String(),
         ];
 
-        if ($embed) {
+        if (! empty($facets)) {
+            $record['facets'] = $facets;
+        }
+
+        if ($embed !== null) {
             $record['embed'] = $embed;
         }
 
@@ -163,6 +183,77 @@ class BlueskyClient implements SocialProviderClient
         $error = $response->json('message') ?? $response->json('error') ?? 'Unknown Bluesky API error';
 
         return ProviderPublishResult::failure($error);
+    }
+
+    /**
+     * Build app.bsky.embed.external from OG data, optionally uploading thumb image.
+     *
+     * @param  array{accessJwt: string, did: string}  $session
+     * @param  array{title: string, description: string, uri: string, imageUrl: string|null}  $linkEmbed
+     * @return array<string, mixed>|null
+     */
+    protected function buildExternalEmbed(array $session, array $linkEmbed): ?array
+    {
+        $external = [
+            'uri' => $linkEmbed['uri'],
+            'title' => $linkEmbed['title'],
+            'description' => $linkEmbed['description'] ?? '',
+        ];
+
+        if (! empty($linkEmbed['imageUrl'])) {
+            $thumbBlob = $this->uploadOgImageAsBlob($session, $linkEmbed['imageUrl']);
+            if ($thumbBlob !== null) {
+                $external['thumb'] = $thumbBlob;
+            }
+        }
+
+        return [
+            '$type' => 'app.bsky.embed.external',
+            'external' => $external,
+        ];
+    }
+
+    /**
+     * Fetch an image URL and upload it as a blob to Bluesky (for link card thumb).
+     * Max 1MB for external thumb.
+     *
+     * @param  array{accessJwt: string, did: string}  $session
+     * @return array<string, mixed>|null
+     */
+    protected function uploadOgImageAsBlob(array $session, string $imageUrl): ?array
+    {
+        try {
+            $response = Http::timeout(5)->get($imageUrl);
+
+            if (! $response->successful()) {
+                return null;
+            }
+
+            $body = $response->body();
+            if (strlen($body) > 1_000_000) {
+                return null;
+            }
+
+            $contentType = $response->header('Content-Type');
+            $mime = explode(';', $contentType)[0] ?? 'image/jpeg';
+            $mime = trim($mime);
+            if (! str_starts_with($mime, 'image/')) {
+                return null;
+            }
+
+            $upload = Http::withToken($session['accessJwt'])
+                ->withHeaders(['Content-Type' => $mime])
+                ->withBody($body, $mime)
+                ->post("{$this->baseUrl}/com.atproto.repo.uploadBlob");
+
+            if ($upload->successful() && $upload->json('blob')) {
+                return $upload->json('blob');
+            }
+        } catch (\Throwable $e) {
+            Log::debug('Bluesky OG thumb upload failed', ['url' => $imageUrl, 'error' => $e->getMessage()]);
+        }
+
+        return null;
     }
 
     /**
