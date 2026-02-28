@@ -110,13 +110,15 @@ class XClient implements SocialProviderClient
     }
 
     /**
-     * Upload a single media item to X via the upload endpoint.
+     * Upload a single media item to X via the v2 media upload endpoint.
      *
-     * Uses simple upload for images/GIFs, chunked INIT/APPEND/FINALIZE for video.
+     * Uses API base URL (api.x.com/2/media/upload) with OAuth 2.0 and media.write scope.
+     * Simple upload for images/GIFs; chunked INIT/APPEND/FINALIZE for video.
      */
     protected function uploadMedia(string $accessToken, ProviderMediaItem $item): ?string
     {
-        $uploadUrl = $this->uploadBaseUrl().'/media/upload';
+        // v2 media upload lives on api.x.com, not upload.x.com (see docs.x.com/x-api/media/upload-media)
+        $uploadUrl = $this->apiBaseUrl().'/media/upload';
 
         if ($item->type === MediaType::Video) {
             return $this->chunkedUpload($accessToken, $item, $uploadUrl);
@@ -125,16 +127,18 @@ class XClient implements SocialProviderClient
         $response = Http::withToken($accessToken)
             ->asMultipart()
             ->post($uploadUrl, [
-                ['name' => 'media_data', 'contents' => base64_encode($item->contents)],
+                ['name' => 'media', 'contents' => $item->contents, 'filename' => $item->filename ?? 'image'],
                 ['name' => 'media_category', 'contents' => $item->type === MediaType::Gif ? 'tweet_gif' : 'tweet_image'],
             ]);
 
         if ($response->successful()) {
-            $mediaId = $response->json('media_id_string')
+            // v2 returns data.id; v1.1 returns media_id_string at root
+            $mediaId = $response->json('data.id')
+                ?? $response->json('media_id_string')
                 ?? $response->json('data.media_id_string')
                 ?? ($response->json('data.media_id') !== null ? (string) $response->json('data.media_id') : null);
             if ($mediaId !== null) {
-                return $mediaId;
+                return (string) $mediaId;
             }
         }
 

@@ -89,7 +89,7 @@ test('successful callback stores social account with encrypted credentials', fun
             'access_token' => 'test-access-token',
             'refresh_token' => 'test-refresh-token',
             'expires_in' => 7200,
-            'scope' => 'tweet.read tweet.write users.read offline.access',
+            'scope' => 'tweet.read tweet.write users.read media.write offline.access',
             'token_type' => 'bearer',
         ]),
         'api.x.com/2/users/me' => Http::response([
@@ -124,7 +124,7 @@ test('successful callback stores social account with encrypted credentials', fun
     $creds = $account->credentials_encrypted;
     expect($creds['access_token'])->toBe('test-access-token');
     expect($creds['refresh_token'])->toBe('test-refresh-token');
-    expect($creds['scope'])->toBe('tweet.read tweet.write users.read offline.access');
+    expect($creds['scope'])->toBe('tweet.read tweet.write users.read media.write offline.access');
     expect($creds['token_type'])->toBe('bearer');
     expect($creds['expires_at'])->not->toBeNull();
 });
