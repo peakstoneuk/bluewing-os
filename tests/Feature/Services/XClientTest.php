@@ -50,7 +50,7 @@ test('refreshes expired token before publishing', function () {
             'access_token' => 'fresh-access-token',
             'refresh_token' => 'fresh-refresh-token',
             'expires_in' => 7200,
-            'scope' => 'tweet.read tweet.write users.read offline.access',
+            'scope' => 'tweet.read tweet.write users.read media.write offline.access',
             'token_type' => 'bearer',
         ]),
         'api.x.com/2/tweets' => Http::response([

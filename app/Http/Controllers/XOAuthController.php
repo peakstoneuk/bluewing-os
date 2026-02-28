@@ -28,10 +28,10 @@ class XOAuthController extends Controller
     }
 
     /**
-     * Scopes required for posting and reading identity.
-     * offline.access requests a refresh token.
+     * Scopes required for posting, reading identity, and uploading media.
+     * media.write is required for X API v2 media upload. offline.access requests a refresh token.
      */
-    private const SCOPES = 'tweet.read tweet.write users.read offline.access';
+    private const SCOPES = 'tweet.read tweet.write users.read media.write offline.access';
 
     /**
      * Redirect the user to X's authorization page.
