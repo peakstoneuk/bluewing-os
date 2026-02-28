@@ -16,10 +16,21 @@
 
 @if ($summary['total'] > 0)
     <div
-        x-data="{ showPopover: false }"
-        x-on:mouseenter="showPopover = true"
+        x-data="{
+            showPopover: false,
+            popoverLeft: 0,
+            popoverTop: 0,
+            updatePosition() {
+                if (!this.$refs.trigger) return;
+                const rect = this.$refs.trigger.getBoundingClientRect();
+                this.popoverLeft = rect.left;
+                this.popoverTop = rect.bottom + 4;
+            }
+        }"
+        x-ref="trigger"
+        x-on:mouseenter="showPopover = true; $nextTick(() => updatePosition())"
         x-on:mouseleave="showPopover = false"
-        x-on:click.stop="showPopover = !showPopover"
+        x-on:click.stop="showPopover = !showPopover; $nextTick(() => updatePosition())"
         x-on:keydown.escape.window="showPopover = false"
         class="relative mt-0.5 flex flex-wrap items-center gap-0.5"
         role="group"
@@ -44,12 +55,13 @@
             </span>
         @endif
 
-        {{-- Popover with full target list --}}
+        {{-- Popover: fixed so it is not clipped by calendar overflow-hidden; opaque for readability --}}
         <div
             x-show="showPopover"
             x-cloak
             x-transition.opacity.duration.150ms
-            class="absolute top-full left-0 z-50 mt-1 w-52 rounded-lg border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
+            x-bind:style="`left: ${popoverLeft}px; top: ${popoverTop}px;`"
+            class="fixed z-[200] w-52 rounded-lg border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-700 dark:bg-zinc-800"
             role="tooltip"
         >
             <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
