@@ -40,7 +40,7 @@ return [
         'client_secret' => env('X_CLIENT_SECRET'),
         'redirect_uri' => env('X_REDIRECT_URI', '/social-accounts/connect/x/callback'),
         'api_base_url' => env('X_API_BASE_URL', 'https://api.x.com/2'),
-        'upload_base_url' => env('X_UPLOAD_BASE_URL', 'https://upload.x.com/1.1'),
+        'upload_base_url' => env('X_UPLOAD_BASE_URL', 'https://upload.x.com/2'),
         'authorize_url' => 'https://x.com/i/oauth2/authorize',
     ],
 

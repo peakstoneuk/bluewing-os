@@ -22,7 +22,7 @@ class XClient implements SocialProviderClient
 
     public function uploadBaseUrl(): string
     {
-        return rtrim(config('services.x.upload_base_url', 'https://upload.x.com/1.1'), '/');
+        return rtrim(config('services.x.upload_base_url', 'https://upload.x.com/2'), '/');
     }
 
     public function validateCredentials(array $credentials): ValidationResult
@@ -116,7 +116,7 @@ class XClient implements SocialProviderClient
      */
     protected function uploadMedia(string $accessToken, ProviderMediaItem $item): ?string
     {
-        $uploadUrl = $this->uploadBaseUrl().'/media/upload.json';
+        $uploadUrl = $this->uploadBaseUrl().'/media/upload';
 
         if ($item->type === MediaType::Video) {
             return $this->chunkedUpload($accessToken, $item, $uploadUrl);
@@ -129,13 +129,19 @@ class XClient implements SocialProviderClient
                 ['name' => 'media_category', 'contents' => $item->type === MediaType::Gif ? 'tweet_gif' : 'tweet_image'],
             ]);
 
-        if ($response->successful() && $response->json('media_id_string')) {
-            return $response->json('media_id_string');
+        if ($response->successful()) {
+            $mediaId = $response->json('media_id_string')
+                ?? $response->json('data.media_id_string')
+                ?? ($response->json('data.media_id') !== null ? (string) $response->json('data.media_id') : null);
+            if ($mediaId !== null) {
+                return $mediaId;
+            }
         }
 
         Log::warning('X media upload failed', [
             'status' => $response->status(),
-            'body' => $response->body(),
+            'body' => $response->body() ?: '(empty)',
+            'headers' => $response->headers(),
         ]);
 
         return null;
