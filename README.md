@@ -54,7 +54,7 @@ The `.env.example` file ships with sensible defaults. Key variables to review:
 | `X_CLIENT_SECRET` | X (Twitter) OAuth 2.0 Client Secret | - |
 | `X_REDIRECT_URI` | OAuth callback URL (override only if needed) | `{APP_URL}/social-accounts/connect/x/callback` |
 | `X_API_BASE_URL` | X REST API base URL | `https://api.x.com/2` |
-| `X_UPLOAD_BASE_URL` | X media upload base URL | `https://upload.x.com/1.1` |
+| `X_UPLOAD_BASE_URL` | X media upload base URL (v2 supports OAuth 2.0) | `https://upload.x.com/2` |
 | `BLUEWING_MEDIA_DISK` | Filesystem disk for media storage | `public` |
 
 `X_CLIENT_ID` and `X_CLIENT_SECRET` are required to connect X accounts. Get them from the [X Developer Portal](https://developer.x.com/en/portal/dashboard). Bluesky credentials are entered per-account and do not require app-level env vars. All per-account tokens are encrypted at rest via Laravel's `encrypted` cast.

@@ -30,8 +30,8 @@ test('x config api base url defaults to api.x.com', function () {
     expect(config('services.x.api_base_url'))->toBe('https://api.x.com/2');
 });
 
-test('x config upload base url defaults to upload.x.com', function () {
-    expect(config('services.x.upload_base_url'))->toBe('https://upload.x.com/1.1');
+test('x config upload base url defaults to upload.x.com v2', function () {
+    expect(config('services.x.upload_base_url'))->toBe('https://upload.x.com/2');
 });
 
 test('x config authorize url uses x.com', function () {
