@@ -55,7 +55,7 @@ class XClient implements SocialProviderClient
 
                 if (! $refreshed) {
                     return ProviderPublishResult::failure(
-                        'OAuth2 access token has expired and could not be refreshed. Please reconnect your X account.'
+                        $this->tokenRefreshFailureMessage($credentials)
                     );
                 }
 
@@ -235,6 +235,24 @@ class XClient implements SocialProviderClient
     }
 
     /**
+     * User-facing message when token refresh fails (no refresh token, API error, or config missing).
+     */
+    protected function tokenRefreshFailureMessage(array $credentials): string
+    {
+        if (empty($credentials['refresh_token'])) {
+            return 'No refresh token is stored for this X account. Please disconnect and reconnect the account in Settings so we can obtain a refresh token and automatically renew access.';
+        }
+
+        $clientId = config('services.x.client_id');
+        $clientSecret = config('services.x.client_secret');
+        if (empty($clientId) || empty($clientSecret)) {
+            return 'X token refresh is not configured (missing X_CLIENT_ID or X_CLIENT_SECRET). Please ask the administrator to set these in .env and reconnect your X account.';
+        }
+
+        return 'X rejected the token refresh (the refresh token may have been revoked). Please disconnect and reconnect your X account in Settings.';
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     protected function refreshAccessToken(array $credentials): ?array
@@ -266,6 +284,7 @@ class XClient implements SocialProviderClient
                 Log::warning('X token refresh failed', [
                     'status' => $response->status(),
                     'error' => $response->json('error') ?? 'unknown',
+                    'error_description' => $response->json('error_description') ?? '',
                 ]);
 
                 return null;
