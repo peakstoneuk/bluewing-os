@@ -123,3 +123,39 @@ test('cannot edit a queued post', function () {
     expect($post->status)->toBe(PostStatus::Queued);
     expect($post->variants->first()->body_text)->toBe('Queued text');
 });
+
+test('queued post shows view mode with info box and content', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->x()->create(['user_id' => $user->id, 'display_name' => '@viewtest']);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Queued,
+        'scheduled_for' => now()->addDay(),
+    ]);
+
+    PostVariant::factory()->create([
+        'post_id' => $post->id,
+        'scope_type' => ScopeType::Default,
+        'body_text' => 'Visible queued body',
+    ]);
+
+    PostTarget::factory()->create([
+        'post_id' => $post->id,
+        'social_account_id' => $account->id,
+    ]);
+
+    $component = Livewire::actingAs($user)
+        ->test(EditPost::class, ['post' => $post]);
+
+    $component->assertSee('View Post');
+    $component->assertSee('This post can no longer be edited');
+    $component->assertSee('It has already been queued or published');
+    $component->assertSee('Visible queued body');
+    $component->assertSee('@viewtest');
+    $component->assertSee('Back to dashboard');
+
+    // View mode: no Schedule or Save as Draft buttons (only Back to dashboard)
+    $html = $component->html();
+    expect($html)->not->toContain('Save as Draft');
+});

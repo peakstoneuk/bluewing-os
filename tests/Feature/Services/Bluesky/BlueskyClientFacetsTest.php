@@ -15,7 +15,7 @@ beforeEach(function () {
 });
 
 test('createRecord payload includes facets when text contains hashtag', function () {
-    $builder = new RichTextFacetsBuilder();
+    $builder = new RichTextFacetsBuilder;
     $client = new BlueskyClient($builder);
 
     $client->publish(
@@ -40,7 +40,7 @@ test('createRecord payload includes facets when text contains hashtag', function
 });
 
 test('createRecord payload includes facets when text contains link', function () {
-    $builder = new RichTextFacetsBuilder();
+    $builder = new RichTextFacetsBuilder;
     $client = new BlueskyClient($builder);
 
     $client->publish(
