@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\XOAuthController;
+use App\Http\Controllers\LinkedInOAuthController;
 use App\Livewire\Dashboard;
 use App\Livewire\Posts;
 use App\Livewire\SocialAccounts;
@@ -22,11 +23,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::livewire('social-accounts/connect/x', SocialAccounts\ConnectX::class)
         ->name('social-accounts.connect-x');
+    Route::livewire('social-accounts/connect/linkedin', SocialAccounts\ConnectLinkedIn::class)
+        ->name('social-accounts.connect-linkedin');
 
     Route::get('social-accounts/connect/x/redirect', [XOAuthController::class, 'redirect'])
         ->name('social-accounts.x-oauth-redirect');
     Route::get('social-accounts/connect/x/callback', [XOAuthController::class, 'callback'])
         ->name('social-accounts.x-oauth-callback');
+    Route::get('social-accounts/connect/linkedin/redirect', [LinkedInOAuthController::class, 'redirect'])
+        ->name('social-accounts.linkedin-oauth-redirect');
+    Route::get('social-accounts/connect/linkedin/callback', [LinkedInOAuthController::class, 'callback'])
+        ->name('social-accounts.linkedin-oauth-callback');
 
     Route::livewire('social-accounts/connect/bluesky', SocialAccounts\ConnectBluesky::class)
         ->name('social-accounts.connect-bluesky');

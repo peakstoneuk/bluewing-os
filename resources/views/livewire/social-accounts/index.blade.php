@@ -12,6 +12,9 @@
         <flux:button variant="primary" :href="route('social-accounts.connect-x')" wire:navigate>
             {{ __('Connect X Account') }}
         </flux:button>
+        <flux:button variant="primary" :href="route('social-accounts.connect-linkedin')" wire:navigate>
+            {{ __('Connect LinkedIn Account') }}
+        </flux:button>
         <flux:button variant="primary" :href="route('social-accounts.connect-bluesky')" wire:navigate>
             {{ __('Connect Bluesky Account') }}
         </flux:button>
@@ -21,9 +24,11 @@
         @forelse ($accounts as $account)
             <div class="flex items-center justify-between rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                 <div class="flex items-center gap-4">
-                    <div class="flex size-10 items-center justify-center rounded-lg {{ $account->provider->value === 'x' ? 'bg-zinc-900 dark:bg-white' : 'bg-blue-500' }}">
+                    <div class="flex size-10 items-center justify-center rounded-lg {{ $account->provider->value === 'x' ? 'bg-zinc-900 dark:bg-white' : ($account->provider->value === 'linkedin' ? 'bg-[#0A66C2]' : 'bg-blue-500') }}">
                         @if ($account->provider->value === 'x')
                             <span class="text-sm font-bold text-white dark:text-zinc-900">𝕏</span>
+                        @elseif ($account->provider->value === 'linkedin')
+                            <span class="inline-flex size-5 items-center justify-center rounded-sm bg-white text-xs font-bold text-[#0A66C2]">in</span>
                         @else
                             <span class="text-sm font-bold text-white">🦋</span>
                         @endif
