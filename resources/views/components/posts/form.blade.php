@@ -47,9 +47,11 @@
                             class="rounded border-zinc-300 text-primary-500 focus:ring-primary-500"
                         />
                         <div class="flex items-center gap-2">
-                            <span class="inline-flex size-6 items-center justify-center rounded {{ $account->provider->value === 'x' ? 'bg-zinc-900 dark:bg-white' : 'bg-blue-500' }}">
+                            <span class="inline-flex size-6 items-center justify-center rounded {{ $account->provider->value === 'x' ? 'bg-zinc-900 dark:bg-white' : ($account->provider->value === 'linkedin' ? 'bg-[#0A66C2]' : 'bg-blue-500') }}">
                                 @if ($account->provider->value === 'x')
                                     <span class="text-xs font-bold text-white dark:text-zinc-900">𝕏</span>
+                                @elseif ($account->provider->value === 'linkedin')
+                                    <span class="inline-flex size-4 items-center justify-center rounded-[2px] bg-white text-[10px] font-bold text-[#0A66C2]">in</span>
                                 @else
                                     <span class="text-xs text-white">🦋</span>
                                 @endif
@@ -64,9 +66,11 @@
             <div class="space-y-2">
                 @foreach ($accounts->whereIn('id', $selectedAccounts) as $account)
                     <div class="flex items-center gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
-                        <span class="inline-flex size-6 items-center justify-center rounded {{ $account->provider->value === 'x' ? 'bg-zinc-900 dark:bg-white' : 'bg-blue-500' }}">
+                        <span class="inline-flex size-6 items-center justify-center rounded {{ $account->provider->value === 'x' ? 'bg-zinc-900 dark:bg-white' : ($account->provider->value === 'linkedin' ? 'bg-[#0A66C2]' : 'bg-blue-500') }}">
                             @if ($account->provider->value === 'x')
                                 <span class="text-xs font-bold text-white dark:text-zinc-900">𝕏</span>
+                            @elseif ($account->provider->value === 'linkedin')
+                                <span class="inline-flex size-4 items-center justify-center rounded-[2px] bg-white text-[10px] font-bold text-[#0A66C2]">in</span>
                             @else
                                 <span class="text-xs text-white">🦋</span>
                             @endif

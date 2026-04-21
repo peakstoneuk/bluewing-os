@@ -119,7 +119,7 @@ GET /api/social-accounts
 
 | Parameter  | Type   | Required | Description |
 |------------|--------|----------|-------------|
-| `provider` | string | No       | Filter by provider. Values: `x`, `bluesky` |
+| `provider` | string | No       | Filter by provider. Values: `x`, `linkedin`, `bluesky` |
 
 #### Response
 
@@ -174,7 +174,7 @@ GET /api/posts
 | Parameter  | Type    | Required | Description |
 |------------|---------|----------|-------------|
 | `status`   | string  | No       | Filter by status. Values: `draft`, `scheduled`, `queued`, `publishing`, `sent`, `failed`, `cancelled` |
-| `provider` | string  | No       | Filter by target provider. Values: `x`, `bluesky` |
+| `provider` | string  | No       | Filter by target provider. Values: `x`, `linkedin`, `bluesky` |
 | `from`     | string  | No       | Start date/datetime (inclusive). ISO 8601 or `YYYY-MM-DD` |
 | `to`       | string  | No       | End date/datetime (inclusive). Must be after or equal to `from` |
 | `per_page` | integer | No       | Results per page (1–100). Default: `15` |
@@ -270,7 +270,7 @@ When requesting `?include=variants`, each post object will also contain a `varia
 | `scope_type`     | `scope_value`       | Description |
 |------------------|---------------------|-------------|
 | `default`        | `null`              | Default text applied to all targets |
-| `provider`       | Provider name (`x`, `bluesky`) | Override for all accounts on a specific platform |
+| `provider`       | Provider name (`x`, `linkedin`, `bluesky`) | Override for all accounts on a specific platform |
 | `social_account` | Social account ID   | Override for a specific social account |
 
 When publishing, content is resolved with this precedence: **social_account > provider > default**.
@@ -300,7 +300,8 @@ POST /api/posts
   "body_text": "Check out our new release!",
   "targets": [1, 2],
   "provider_overrides": {
-    "x": "New release! 🚀 Check it out"
+    "x": "New release! 🚀 Check it out",
+    "linkedin": "We just shipped a new release. Read the full details here."
   },
   "account_overrides": {
     "1": "Custom text for this specific X account"
@@ -320,7 +321,7 @@ POST /api/posts
 | `scheduled_for`      | string | Yes      | ISO 8601 datetime. Must not be significantly in the past |
 | `body_text`          | string | Yes      | Default post text (max 5000 characters) |
 | `targets`            | array  | Yes      | Array of social account IDs to post to. Minimum 1 |
-| `provider_overrides` | object | No       | Keyed by provider name (`x`, `bluesky`). Value is override text (max 5000 characters) |
+| `provider_overrides` | object | No       | Keyed by provider name (`x`, `linkedin`, `bluesky`). Value is override text (max 5000 characters) |
 | `account_overrides`  | object | No       | Keyed by social account ID. Value is override text (max 5000 characters) |
 | `media_ids`          | array  | No       | Array of media IDs from prior `POST /api/media` uploads. Max 4 |
 | `alt_texts`          | object | No       | Keyed by media ID. Alt text for each media item (max 1000 characters each) |
@@ -456,6 +457,9 @@ Platform-specific upload limits are enforced when creating a post with media. Wh
 | X        | Image | 5 MB |
 | X        | GIF   | 15 MB |
 | X        | Video | 512 MB |
+| LinkedIn | Image | 10 MB |
+| LinkedIn | GIF   | 10 MB |
+| LinkedIn | Video | 500 MB |
 | Bluesky  | Image | 1 MB |
 | Bluesky  | Video | 100 MB |
 

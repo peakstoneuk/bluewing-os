@@ -1,11 +1,11 @@
 # Blue Wing
 
-Open source social media scheduling tool. Schedule posts to X (Twitter) and Bluesky from a single interface, with support for multiple accounts and per-platform content customisation.
+Open source social media scheduling tool. Schedule posts to X (Twitter), LinkedIn, and Bluesky from a single interface, with support for multiple accounts and per-platform content customisation.
 
 ## Features
 
-- **Multi-platform scheduling** - publish to X and Bluesky simultaneously
-- **Multiple accounts** - connect as many X and Bluesky accounts as you need
+- **Multi-platform scheduling** - publish to X, LinkedIn, and Bluesky simultaneously
+- **Multiple accounts** - connect as many X, LinkedIn, and Bluesky accounts as you need
 - **Content customisation** - write default text, then override per-provider or per-account
 - **Team access** - grant other users viewer or editor access to your social accounts
 - **Media attachments** - upload images, GIFs, and video to posts with per-platform limit enforcement
@@ -55,9 +55,13 @@ The `.env.example` file ships with sensible defaults. Key variables to review:
 | `X_REDIRECT_URI` | OAuth callback URL (override only if needed) | `{APP_URL}/social-accounts/connect/x/callback` |
 | `X_API_BASE_URL` | X REST API base URL | `https://api.x.com/2` |
 | `X_UPLOAD_BASE_URL` | X media upload base URL (v2 supports OAuth 2.0) | `https://upload.x.com/2` |
+| `LINKEDIN_CLIENT_ID` | LinkedIn OAuth 2.0 Client ID | - |
+| `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth 2.0 Client Secret | - |
+| `LINKEDIN_REDIRECT_URI` | LinkedIn OAuth callback URL (override only if needed) | `{APP_URL}/social-accounts/connect/linkedin/callback` |
+| `LINKEDIN_API_BASE_URL` | LinkedIn REST API base URL | `https://api.linkedin.com` |
 | `BLUEWING_MEDIA_DISK` | Filesystem disk for media storage | `public` |
 
-`X_CLIENT_ID` and `X_CLIENT_SECRET` are required to connect X accounts. Get them from the [X Developer Portal](https://developer.x.com/en/portal/dashboard). Media uploads use the v2 upload endpoint (`upload.x.com/2`) which supports OAuth 2.0; if you see a 403 on media upload, check your app's access level in the portal (e.g. Elevated or Basic may be required for media). Bluesky credentials are entered per-account and do not require app-level env vars. All per-account tokens are encrypted at rest via Laravel's `encrypted` cast.
+`X_CLIENT_ID` and `X_CLIENT_SECRET` are required to connect X accounts. `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` are required to connect LinkedIn accounts. Get them from the [X Developer Portal](https://developer.x.com/en/portal/dashboard) and [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps). Media uploads to X use the v2 upload endpoint (`upload.x.com/2`) which supports OAuth 2.0; if you see a 403 on media upload, check your app's access level in the portal (e.g. Elevated or Basic may be required for media). Bluesky credentials are entered per-account and do not require app-level env vars. All per-account tokens are encrypted at rest via Laravel's `encrypted` cast.
 
 ## Running Locally
 
@@ -137,6 +141,32 @@ X accounts are connected via OAuth 2.0 with PKCE. Users click **Connect with X**
 | "Failed to exchange authorization code" | Callback URL mismatch - ensure the URL in X Developer Portal matches exactly |
 | Token refresh fails during publishing | The user's refresh token was revoked - reconnect the X account |
 
+### LinkedIn
+
+LinkedIn accounts are connected via OAuth 2.0 (authorization code flow). Users click **Connect with LinkedIn** and authorize via the LinkedIn consent screen.
+
+**Setup (one-time, by the application admin):**
+
+1. Create an app in the [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps).
+2. Add the **Share on LinkedIn** product for your app.
+3. Configure OAuth redirect URLs and include:
+   - `https://yourdomain.com/social-accounts/connect/linkedin/callback`
+4. Copy the **Client ID** and **Client Secret** into your `.env`:
+   ```
+   LINKEDIN_CLIENT_ID=your_client_id
+   LINKEDIN_CLIENT_SECRET=your_client_secret
+   ```
+
+**Scopes requested:** `openid`, `profile`, `w_member_social`
+
+**Troubleshooting:**
+
+| Problem | Solution |
+|---------|----------|
+| "LinkedIn OAuth Client ID is not configured" | Set `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` in `.env` |
+| "Invalid OAuth state" | Session expired between redirect and callback - try again |
+| "Failed to exchange authorization code" | Redirect URL mismatch - ensure the URL in LinkedIn Developer Portal matches exactly |
+
 ### Bluesky
 
 You need:
@@ -151,10 +181,10 @@ Navigate to **Social Accounts → Connect Bluesky Account** and enter both field
 When creating a post, content is resolved using a three-tier precedence system:
 
 1. **Default text** - applies to all targets
-2. **Provider override** - overrides the default for all accounts on a specific platform (e.g. all X accounts)
+2. **Provider override** - overrides the default for all accounts on a specific platform (e.g. all X or LinkedIn accounts)
 3. **Account override** - overrides everything for a specific social account
 
-This lets you tailor content per platform (e.g. shorter text for X, longer for Bluesky) or per account.
+This lets you tailor content per platform (e.g. shorter text for X, business copy for LinkedIn) or per account.
 
 ## Media Attachments
 
@@ -172,6 +202,9 @@ Video: MP4, MOV, AVI, WebM
 | X        | Image | 5 MB |
 | X        | GIF   | 15 MB |
 | X        | Video | 512 MB |
+| LinkedIn | Image | 10 MB |
+| LinkedIn | GIF   | 10 MB |
+| LinkedIn | Video | 500 MB |
 | Bluesky  | Image | 1 MB |
 | Bluesky  | Video | 100 MB |
 
@@ -180,7 +213,7 @@ Video: MP4, MOV, AVI, WebM
 - Up to 4 images per post (GIFs count as images).
 - 1 video per post. Cannot mix images and video.
 - Bluesky images support per-image alt text.
-- **Cross-posting rule:** when posting to multiple platforms, the strictest limit applies. For example, an image posted to both X and Bluesky must be under 1 MB (the Bluesky limit).
+- **Cross-posting rule:** when posting to multiple platforms, the strictest limit applies. For example, an image posted to X, LinkedIn, and Bluesky must be under 1 MB (the Bluesky limit).
 
 ### Upload via API
 
@@ -226,6 +259,7 @@ app/
 ├── Enums/                              # PostStatus, PostTargetStatus, Provider, MediaType, etc.
 ├── Http/Controllers/
 │   ├── Api/                            # Thin API controllers (posts, accounts, media)
+│   ├── LinkedInOAuthController.php    # LinkedIn OAuth2 connect + callback
 │   └── XOAuthController.php           # X OAuth2 connect + callback
 ├── Jobs/
 │   └── PublishPostTargetJob.php        # Queue job per target (handles media upload)
@@ -239,6 +273,7 @@ app/
     └── SocialProviders/
         ├── Contracts/                  # SocialProviderClient, ProviderMediaItem, DTOs
         ├── Bluesky/BlueskyClient.php   # AT Protocol posting + blob upload
+        ├── LinkedIn/LinkedInClient.php # LinkedIn publishing + media upload via REST API
         ├── X/XClient.php              # OAuth2 publishing + media upload via upload.x.com
         └── SocialProviderFactory.php   # Provider resolver
 ```
@@ -281,6 +316,8 @@ The test suite covers:
 - X OAuth2 connect flow (state validation, PKCE, callback handling)
 - X OAuth2 token refresh during publishing (expired, buffer, missing refresh token)
 - X API base URL assertions (`api.x.com`, `upload.x.com`, no `twitter.com`)
+- LinkedIn OAuth2 connect flow (state validation, callback handling)
+- LinkedIn publishing client (text posts, media uploads, token refresh paths)
 - Provider factory resolution and credential validation
 - Media validation (size limits, mixing rules, cross-posting enforcement)
 - Livewire component interactions (CRUD, filters, authorization, media upload)

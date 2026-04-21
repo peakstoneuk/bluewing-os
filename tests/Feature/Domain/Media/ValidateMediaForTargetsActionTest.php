@@ -121,6 +121,40 @@ test('bluesky video exceeding 100 MB fails', function () {
 });
 
 // ──────────────────────────────────────────────────────────
+// LinkedIn limits
+// ──────────────────────────────────────────────────────────
+
+test('linkedin image within 10 MB passes', function () {
+    $files = [makeFile('image', 10 * 1024 * 1024)];
+    $errors = $this->action->execute($files, [Provider::LinkedIn]);
+
+    expect($errors)->toBeEmpty();
+});
+
+test('linkedin image exceeding 10 MB fails', function () {
+    $files = [makeFile('image', 10 * 1024 * 1024 + 1)];
+    $errors = $this->action->execute($files, [Provider::LinkedIn]);
+
+    expect($errors)->toHaveCount(1)
+        ->and($errors[0])->toContain('exceeds the maximum size');
+});
+
+test('linkedin video within 500 MB passes', function () {
+    $files = [makeFile('video', 500 * 1024 * 1024)];
+    $errors = $this->action->execute($files, [Provider::LinkedIn]);
+
+    expect($errors)->toBeEmpty();
+});
+
+test('linkedin video exceeding 500 MB fails', function () {
+    $files = [makeFile('video', 500 * 1024 * 1024 + 1)];
+    $errors = $this->action->execute($files, [Provider::LinkedIn]);
+
+    expect($errors)->toHaveCount(1)
+        ->and($errors[0])->toContain('exceeds the maximum size');
+});
+
+// ──────────────────────────────────────────────────────────
 // Cross-posting enforces strictest limit
 // ──────────────────────────────────────────────────────────
 
@@ -157,6 +191,18 @@ test('cross posting gif enforces bluesky 1000000 byte limit over x 15 MB', funct
     $failingFile = [makeFile('gif', 1_000_001)];
     $errors = $this->action->execute($failingFile, $providers);
     expect($errors)->toHaveCount(1);
+});
+
+test('cross posting video enforces linkedin 500 MB limit over x 512 MB', function () {
+    $providers = [Provider::X, Provider::LinkedIn];
+
+    $passingFile = [makeFile('video', 500 * 1024 * 1024)];
+    expect($this->action->execute($passingFile, $providers))->toBeEmpty();
+
+    $failingFile = [makeFile('video', 500 * 1024 * 1024 + 1)];
+    $errors = $this->action->execute($failingFile, $providers);
+    expect($errors)->toHaveCount(1)
+        ->and($errors[0])->toContain('exceeds the maximum size');
 });
 
 // ──────────────────────────────────────────────────────────
@@ -266,5 +312,8 @@ test('media limit constants have expected values', function () {
     expect(MediaLimits::X_VIDEO_MAX_BYTES)->toBe(512 * 1024 * 1024);
     expect(MediaLimits::BLUESKY_IMAGE_MAX_BYTES)->toBe(1_000_000);
     expect(MediaLimits::BLUESKY_VIDEO_MAX_BYTES)->toBe(100 * 1024 * 1024);
+    expect(MediaLimits::LINKEDIN_IMAGE_MAX_BYTES)->toBe(10 * 1024 * 1024);
+    expect(MediaLimits::LINKEDIN_GIF_MAX_BYTES)->toBe(10 * 1024 * 1024);
+    expect(MediaLimits::LINKEDIN_VIDEO_MAX_BYTES)->toBe(500 * 1024 * 1024);
     expect(MediaLimits::MAX_IMAGES_PER_POST)->toBe(4);
 });

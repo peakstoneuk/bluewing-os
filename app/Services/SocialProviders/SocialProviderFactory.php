@@ -5,6 +5,7 @@ namespace App\Services\SocialProviders;
 use App\Enums\Provider;
 use App\Services\SocialProviders\Bluesky\BlueskyClient;
 use App\Services\SocialProviders\Contracts\SocialProviderClient;
+use App\Services\SocialProviders\LinkedIn\LinkedInClient;
 use App\Services\SocialProviders\X\XClient;
 use InvalidArgumentException;
 
@@ -16,6 +17,7 @@ class SocialProviderFactory
     protected array $providers = [
         'x' => XClient::class,
         'bluesky' => BlueskyClient::class,
+        'linkedin' => LinkedInClient::class,
     ];
 
     public function make(Provider $provider): SocialProviderClient
