@@ -4,6 +4,7 @@ use App\Enums\Provider;
 use App\Services\SocialProviders\Bluesky\BlueskyClient;
 use App\Services\SocialProviders\Contracts\SocialProviderClient;
 use App\Services\SocialProviders\Contracts\ValidationResult;
+use App\Services\SocialProviders\LinkedIn\LinkedInClient;
 use App\Services\SocialProviders\SocialProviderFactory;
 use App\Services\SocialProviders\X\XClient;
 
@@ -26,6 +27,7 @@ test('resolves from string', function () {
 
     expect($factory->makeFromString('x'))->toBeInstanceOf(XClient::class);
     expect($factory->makeFromString('bluesky'))->toBeInstanceOf(BlueskyClient::class);
+    expect($factory->makeFromString('linkedin'))->toBeInstanceOf(LinkedInClient::class);
 });
 
 test('throws for unsupported provider', function () {
@@ -101,6 +103,38 @@ test('credential fields are defined for bluesky', function () {
     expect($fields)->toHaveKeys(['handle', 'app_password']);
     expect($fields['handle']['required'])->toBeTrue();
     expect($fields['app_password']['required'])->toBeTrue();
+});
+
+test('linkedin client validates missing credentials', function () {
+    $client = new LinkedInClient;
+
+    $result = $client->validateCredentials([]);
+
+    expect($result->valid)->toBeFalse();
+    expect($result->message)->toContain('access_token');
+});
+
+test('linkedin client validates complete credentials', function () {
+    $client = new LinkedInClient;
+
+    $result = $client->validateCredentials([
+        'access_token' => 'linkedin-token',
+    ]);
+
+    expect($result->valid)->toBeTrue();
+});
+
+test('credential fields are defined for linkedin', function () {
+    $fields = LinkedInClient::credentialFields();
+
+    expect($fields)->toHaveKeys([
+        'access_token',
+        'refresh_token',
+        'expires_at',
+    ]);
+
+    expect($fields['access_token']['required'])->toBeTrue();
+    expect($fields['refresh_token']['required'])->toBeFalse();
 });
 
 // Minimal fake provider for the registration test

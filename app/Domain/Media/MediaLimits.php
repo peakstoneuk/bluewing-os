@@ -19,6 +19,12 @@ final class MediaLimits
 
     public const BLUESKY_VIDEO_MAX_BYTES = 100 * 1024 * 1024; // 100 MB
 
+    public const LINKEDIN_IMAGE_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+    public const LINKEDIN_GIF_MAX_BYTES = 10 * 1024 * 1024;   // 10 MB
+
+    public const LINKEDIN_VIDEO_MAX_BYTES = 500 * 1024 * 1024; // 500 MB
+
     public const MAX_IMAGES_PER_POST = 4;
 
     public static function imageMaxBytes(Provider $provider): int
@@ -26,6 +32,7 @@ final class MediaLimits
         return match ($provider) {
             Provider::X => self::X_IMAGE_MAX_BYTES,
             Provider::Bluesky => self::BLUESKY_IMAGE_MAX_BYTES,
+            Provider::LinkedIn => self::LINKEDIN_IMAGE_MAX_BYTES,
         };
     }
 
@@ -34,6 +41,7 @@ final class MediaLimits
         return match ($provider) {
             Provider::X => self::X_GIF_MAX_BYTES,
             Provider::Bluesky => self::BLUESKY_IMAGE_MAX_BYTES,
+            Provider::LinkedIn => self::LINKEDIN_GIF_MAX_BYTES,
         };
     }
 
@@ -42,6 +50,7 @@ final class MediaLimits
         return match ($provider) {
             Provider::X => self::X_VIDEO_MAX_BYTES,
             Provider::Bluesky => self::BLUESKY_VIDEO_MAX_BYTES,
+            Provider::LinkedIn => self::LINKEDIN_VIDEO_MAX_BYTES,
         };
     }
 
