@@ -59,6 +59,7 @@ The `.env.example` file ships with sensible defaults. Key variables to review:
 | `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth 2.0 Client Secret | - |
 | `LINKEDIN_REDIRECT_URI` | LinkedIn OAuth callback URL (override only if needed) | `{APP_URL}/social-accounts/connect/linkedin/callback` |
 | `LINKEDIN_API_BASE_URL` | LinkedIn REST API base URL | `https://api.linkedin.com` |
+| `LINKEDIN_VERSION` | LinkedIn API version header (`YYYYMM`) | Previous calendar month (e.g. `202606` in July 2026) |
 | `BLUEWING_MEDIA_DISK` | Filesystem disk for media storage | `public` |
 
 `X_CLIENT_ID` and `X_CLIENT_SECRET` are required to connect X accounts. `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` are required to connect LinkedIn accounts. Get them from the [X Developer Portal](https://developer.x.com/en/portal/dashboard) and [LinkedIn Developer Portal](https://www.linkedin.com/developers/apps). Media uploads to X use the v2 upload endpoint (`upload.x.com/2`) which supports OAuth 2.0; if you see a 403 on media upload, check your app's access level in the portal (e.g. Elevated or Basic may be required for media). Bluesky credentials are entered per-account and do not require app-level env vars. All per-account tokens are encrypted at rest via Laravel's `encrypted` cast.

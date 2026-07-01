@@ -106,7 +106,7 @@ test('publishes linkedin post with image media', function () {
             contents: 'fake-image-binary',
             sizeBytes: strlen('fake-image-binary'),
             altText: 'A product screenshot',
-            filename: 'image.png',
+            filename: 'launch-card.png',
         ),
     ];
 
@@ -118,8 +118,91 @@ test('publishes linkedin post with image media', function () {
     expect($result->providerMediaIds[42])->toBe('urn:li:image:123');
 
     Http::assertSent(function ($request) {
+        return $request->url() === 'https://upload.linkedin.test/image/123'
+            && $request->method() === 'PUT'
+            && $request->hasHeader('Authorization', 'Bearer valid-linkedin-token');
+    });
+
+    Http::assertSent(function ($request) {
         return $request->url() === 'https://api.linkedin.com/rest/posts'
-            && $request['content']['media'][0]['id'] === 'urn:li:image:123'
-            && $request['content']['media'][0]['altText'] === 'A product screenshot';
+            && $request['content']['media']['id'] === 'urn:li:image:123'
+            && $request['content']['media']['altText'] === 'A product screenshot';
+    });
+});
+
+test('publishes linkedin post with multiple images using multiImage content', function () {
+    Http::fake([
+        'api.linkedin.com/rest/images?action=initializeUpload' => Http::sequence()
+            ->push([
+                'value' => [
+                    'uploadUrl' => 'https://upload.linkedin.test/image/1',
+                    'image' => 'urn:li:image:1',
+                ],
+            ])
+            ->push([
+                'value' => [
+                    'uploadUrl' => 'https://upload.linkedin.test/image/2',
+                    'image' => 'urn:li:image:2',
+                ],
+            ]),
+        'upload.linkedin.test/*' => Http::response('', 201),
+        'api.linkedin.com/rest/posts' => Http::response([
+            'id' => 'urn:li:share:multi',
+        ]),
+    ]);
+
+    $client = new LinkedInClient;
+    $media = [
+        new ProviderMediaItem(
+            id: 1,
+            type: MediaType::Image,
+            mimeType: 'image/png',
+            contents: 'image-one',
+            sizeBytes: strlen('image-one'),
+            altText: 'First image',
+            filename: 'one.png',
+        ),
+        new ProviderMediaItem(
+            id: 2,
+            type: MediaType::Image,
+            mimeType: 'image/png',
+            contents: 'image-two',
+            sizeBytes: strlen('image-two'),
+            altText: 'Second image',
+            filename: 'two.png',
+        ),
+    ];
+
+    $result = $client->publish('member-123', [
+        'access_token' => 'valid-linkedin-token',
+    ], 'Multi image post', $media);
+
+    expect($result->success)->toBeTrue();
+
+    Http::assertSent(function ($request) {
+        return $request->url() === 'https://api.linkedin.com/rest/posts'
+            && $request['content']['multiImage']['images'][0]['id'] === 'urn:li:image:1'
+            && $request['content']['multiImage']['images'][1]['id'] === 'urn:li:image:2';
+    });
+});
+
+test('defaults linkedin api version to previous month when not configured', function () {
+    config(['services.linkedin.version' => null]);
+
+    Http::fake([
+        'api.linkedin.com/rest/posts' => Http::response([
+            'id' => 'urn:li:share:1234',
+        ]),
+    ]);
+
+    $client = new LinkedInClient;
+
+    $client->publishText('member-123', [
+        'access_token' => 'valid-linkedin-token',
+    ], 'Version check');
+
+    Http::assertSent(function ($request) {
+        return $request->url() === 'https://api.linkedin.com/rest/posts'
+            && $request->hasHeader('LinkedIn-Version', now()->subMonth()->format('Ym'));
     });
 });

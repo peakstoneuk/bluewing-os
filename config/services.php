@@ -49,6 +49,7 @@ return [
         'client_secret' => env('LINKEDIN_CLIENT_SECRET'),
         'redirect_uri' => env('LINKEDIN_REDIRECT_URI', '/social-accounts/connect/linkedin/callback'),
         'api_base_url' => env('LINKEDIN_API_BASE_URL', 'https://api.linkedin.com'),
+        'version' => env('LINKEDIN_VERSION'),
     ],
 
 ];
