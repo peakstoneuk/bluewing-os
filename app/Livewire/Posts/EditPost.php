@@ -6,7 +6,10 @@ use App\Domain\Media\ValidateMediaForTargetsAction;
 use App\Domain\Posts\PostData;
 use App\Domain\Posts\UpdatePostAction;
 use App\Domain\SocialAccounts\GetAccessibleAccountsQuery;
+use App\Domain\SocialAccounts\LinkedInTokenInspector;
 use App\Enums\PostStatus;
+use App\Livewire\Posts\Concerns\RedirectsForLinkedInReauthorization;
+use Carbon\Carbon;
 use App\Enums\ScopeType;
 use App\Models\Post;
 use App\Models\PostMedia;
@@ -22,6 +25,7 @@ use Livewire\WithFileUploads;
 #[Title('Edit Post')]
 class EditPost extends Component
 {
+    use RedirectsForLinkedInReauthorization;
     use WithFileUploads;
 
     public Post $post;
@@ -75,6 +79,14 @@ class EditPost extends Component
                 $this->alt_texts[$media->id] = $media->alt_text;
             }
         }
+
+        if (in_array($post->status, [PostStatus::Draft, PostStatus::Scheduled], true) && $this->scheduled_for !== '') {
+            $this->attemptLinkedInReauthorizationRedirect(
+                $this->selected_accounts,
+                $this->scheduled_for,
+                route('posts.edit', $this->post),
+            );
+        }
     }
 
     #[Computed]
@@ -109,6 +121,25 @@ class EditPost extends Component
     {
         return collect($this->selectedProviders)
             ->contains(fn ($p) => $p->value === 'bluesky');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function linkedInAuthorizationWarnings(): array
+    {
+        $inspector = app(LinkedInTokenInspector::class);
+        $scheduledFor = $this->scheduled_for !== ''
+            ? Carbon::parse($this->scheduled_for)
+            : null;
+
+        return collect($this->accounts)
+            ->whereIn('id', $this->selected_accounts)
+            ->map(fn ($account) => $inspector->getAuthorizationWarning($account, $scheduledFor))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     #[Computed]
@@ -213,9 +244,13 @@ class EditPost extends Component
         }
 
         $label = $status === PostStatus::Scheduled ? 'scheduled' : 'saved as draft';
-        session()->flash('message', "Post {$label} successfully.");
 
-        $this->redirect(route('dashboard'), navigate: true);
+        $this->finishPostSave(
+            $label,
+            $this->selected_accounts,
+            $this->scheduled_for,
+            route('posts.edit', $this->post),
+        );
     }
 
     public function render()

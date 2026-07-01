@@ -26,6 +26,10 @@
                         </ul>
                     </div>
 
+                    <div class="rounded-lg border border-warning-300 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-700 dark:bg-warning-900/20 dark:text-warning-200">
+                        {{ __('LinkedIn access tokens typically expire after about 60 days. Most apps cannot receive a refresh token from LinkedIn, so you will need to reconnect periodically to keep scheduled posting working.') }}
+                    </div>
+
                     <div class="flex items-center gap-4">
                         <a href="{{ route('social-accounts.linkedin-oauth-redirect') }}"
                            class="inline-flex items-center gap-2 rounded-lg bg-[#0A66C2] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#0856A8]">

@@ -159,6 +159,8 @@ LinkedIn accounts are connected via OAuth 2.0 (authorization code flow). Users c
 
 **Scopes requested:** `openid`, `profile`, `w_member_social`
 
+LinkedIn access tokens typically expire after about 60 days. Most apps do not receive a refresh token from LinkedIn (this requires Marketing Developer Platform approval), so users must reconnect periodically. Blue Wing warns on connect, shows expiry status on the Social Accounts page, and automatically redirects to LinkedIn reauthorization after saving a post when the token will expire before the scheduled publish time.
+
 **Troubleshooting:**
 
 | Problem | Solution |
@@ -166,6 +168,7 @@ LinkedIn accounts are connected via OAuth 2.0 (authorization code flow). Users c
 | "LinkedIn OAuth Client ID is not configured" | Set `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` in `.env` |
 | "Invalid OAuth state" | Session expired between redirect and callback - try again |
 | "Failed to exchange authorization code" | Redirect URL mismatch - ensure the URL in LinkedIn Developer Portal matches exactly |
+| LinkedIn post fails with expired token message | Reconnect the LinkedIn account from Social Accounts or save a post targeting LinkedIn to trigger automatic reauthorization |
 
 ### Bluesky
 

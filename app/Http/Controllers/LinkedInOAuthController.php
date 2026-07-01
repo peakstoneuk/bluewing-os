@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\SocialAccounts\LinkedInTokenInspector;
 use App\Enums\Provider;
 use App\Models\SocialAccount;
 use Illuminate\Http\RedirectResponse;
@@ -122,9 +123,17 @@ class LinkedInOAuthController extends Controller
             ],
         );
 
-        return redirect()
-            ->route('social-accounts.index')
-            ->with('message', "LinkedIn account {$userInfo['name']} connected successfully.");
+        $returnTo = session()->pull('linkedin_oauth_return_to', route('social-accounts.index'));
+        $inspector = app(LinkedInTokenInspector::class);
+        $connectionWarning = $inspector->getConnectionWarning($tokens['refresh_token'] ?? null);
+
+        if ($connectionWarning !== null) {
+            session()->flash('warning', $connectionWarning);
+        }
+
+        session()->flash('message', "LinkedIn account {$userInfo['name']} connected successfully.");
+
+        return redirect()->to($returnTo);
     }
 
     /**

@@ -85,6 +85,20 @@
         @error('selected_accounts')
             <flux:text class="mt-2 text-danger-600">{{ $message }}</flux:text>
         @enderror
+
+        @if ($editable && count($this->linkedInAuthorizationWarnings) > 0)
+            <div class="mt-4 rounded-lg border border-warning-300 bg-warning-50 p-4 dark:border-warning-700 dark:bg-warning-900/20">
+                <p class="text-sm font-medium text-warning-800 dark:text-warning-200">{{ __('LinkedIn authorization required') }}</p>
+                <ul class="mt-2 list-inside list-disc space-y-1 text-sm text-warning-700 dark:text-warning-300">
+                    @foreach ($this->linkedInAuthorizationWarnings as $warning)
+                        <li>{{ $warning }}</li>
+                    @endforeach
+                </ul>
+                <p class="mt-2 text-sm text-warning-700 dark:text-warning-300">
+                    {{ __('If you save this post with an expired or expiring LinkedIn connection, you will be redirected to reconnect automatically.') }}
+                </p>
+            </div>
+        @endif
     </div>
 
     {{-- Default Text --}}
@@ -150,6 +164,9 @@
                             :placeholder="__('Leave blank to use default text')"
                             rows="3"
                         />
+                        @error('provider_overrides.' . $provider->value)
+                            <flux:text class="mt-1 text-danger-600">{{ $message }}</flux:text>
+                        @enderror
                     @else
                         @php $override = $providerOverrides[$provider->value] ?? ''; @endphp
                         @if (trim($override) !== '')
@@ -196,6 +213,9 @@
                             :placeholder="__('Leave blank to use default text')"
                             rows="3"
                         />
+                        @error('account_overrides.' . $account->id)
+                            <flux:text class="mt-1 text-danger-600">{{ $message }}</flux:text>
+                        @enderror
                     @else
                         @php $override = $accountOverrides[$account->id] ?? ''; @endphp
                         @if (trim($override) !== '')

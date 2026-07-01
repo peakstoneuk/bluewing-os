@@ -380,3 +380,47 @@ test('rejects more than 4 images', function () {
         mediaIds: $mediaIds,
     ));
 })->throws(ValidationException::class, 'maximum of 4');
+
+test('rejects default text exceeding bluesky grapheme limit', function () {
+    $user = User::factory()->create();
+    $bsAccount = SocialAccount::factory()->bluesky()->create(['user_id' => $user->id]);
+
+    $action = new CreatePostAction;
+
+    $action->execute($user, new PostData(
+        scheduledFor: now()->addHour()->toDateTimeString(),
+        bodyText: str_repeat('a', 301),
+        targetAccountIds: [$bsAccount->id],
+    ));
+})->throws(ValidationException::class, 'Bluesky posts are limited to 300 graphemes');
+
+test('allows long default text when valid bluesky provider override is set', function () {
+    $user = User::factory()->create();
+    $bsAccount = SocialAccount::factory()->bluesky()->create(['user_id' => $user->id]);
+
+    $action = new CreatePostAction;
+
+    $post = $action->execute($user, new PostData(
+        scheduledFor: now()->addHour()->toDateTimeString(),
+        bodyText: str_repeat('a', 301),
+        targetAccountIds: [$bsAccount->id],
+        providerOverrides: ['bluesky' => 'Short Bluesky text'],
+    ));
+
+    expect($post->variants)->toHaveCount(2);
+});
+
+test('allows long default text when only non-bluesky targets are selected', function () {
+    $user = User::factory()->create();
+    $xAccount = SocialAccount::factory()->x()->create(['user_id' => $user->id]);
+
+    $action = new CreatePostAction;
+
+    $post = $action->execute($user, new PostData(
+        scheduledFor: now()->addHour()->toDateTimeString(),
+        bodyText: str_repeat('a', 301),
+        targetAccountIds: [$xAccount->id],
+    ));
+
+    expect($post->variants)->toHaveCount(1);
+});

@@ -18,6 +18,7 @@ class UpdatePostAction
 {
     public function __construct(
         protected ValidateMediaForTargetsAction $validateMedia = new ValidateMediaForTargetsAction,
+        protected ValidatePostTextForTargetsAction $validateText = new ValidatePostTextForTargetsAction,
     ) {}
 
     /**
@@ -34,6 +35,7 @@ class UpdatePostAction
         }
 
         $this->assertEditorAccessToAllTargets($user, $data->targetAccountIds);
+        $this->assertTextValidForTargets($data);
 
         $mediaRecords = $this->loadAndValidateMedia($user, $data);
 
@@ -70,6 +72,18 @@ class UpdatePostAction
                     'targets' => 'You do not have permission to publish to one of the selected accounts.',
                 ]);
             }
+        }
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function assertTextValidForTargets(PostData $data): void
+    {
+        $errors = $this->validateText->execute($data);
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
         }
     }
 

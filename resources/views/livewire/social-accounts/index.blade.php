@@ -8,6 +8,12 @@
         </div>
     @endif
 
+    @if (session('warning'))
+        <div class="mt-4 rounded-lg bg-warning-50 p-4 text-warning-800 dark:bg-warning-900/20 dark:text-warning-200">
+            {{ session('warning') }}
+        </div>
+    @endif
+
     <div class="mt-6 flex flex-wrap gap-3">
         <flux:button variant="primary" :href="route('social-accounts.connect-x')" wire:navigate>
             {{ __('Connect X Account') }}
@@ -43,11 +49,22 @@
                                 </span>
                             @endif
                         </div>
+                        @if ($account->provider->value === 'linkedin')
+                            @php $linkedInStatus = app(\App\Domain\SocialAccounts\LinkedInTokenInspector::class)->getAccountStatusMessage($account); @endphp
+                            @if ($linkedInStatus)
+                                <p class="mt-1 text-xs text-warning-700 dark:text-warning-300">{{ $linkedInStatus }}</p>
+                            @endif
+                        @endif
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2">
                     @if ($account->user_id === auth()->id())
+                        @if ($account->provider->value === 'linkedin')
+                            <flux:button size="sm" :href="route('social-accounts.linkedin-oauth-redirect')">
+                                {{ __('Reconnect') }}
+                            </flux:button>
+                        @endif
                         <flux:button size="sm" :href="route('social-accounts.permissions', $account)" wire:navigate>
                             {{ __('Permissions') }}
                         </flux:button>

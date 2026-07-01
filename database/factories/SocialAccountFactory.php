@@ -35,4 +35,40 @@ class SocialAccountFactory extends Factory
             'provider' => Provider::Bluesky,
         ]);
     }
+
+    public function linkedin(): static
+    {
+        return $this->state(fn () => [
+            'provider' => Provider::LinkedIn,
+            'credentials_encrypted' => [
+                'access_token' => 'linkedin-access-token',
+                'refresh_token' => null,
+                'expires_at' => now()->addDays(30)->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function linkedinWithRefreshToken(): static
+    {
+        return $this->state(fn () => [
+            'provider' => Provider::LinkedIn,
+            'credentials_encrypted' => [
+                'access_token' => 'linkedin-access-token',
+                'refresh_token' => 'linkedin-refresh-token',
+                'expires_at' => now()->addDays(30)->toIso8601String(),
+            ],
+        ]);
+    }
+
+    public function linkedinExpired(): static
+    {
+        return $this->state(fn () => [
+            'provider' => Provider::LinkedIn,
+            'credentials_encrypted' => [
+                'access_token' => 'linkedin-access-token',
+                'refresh_token' => null,
+                'expires_at' => now()->subDay()->toIso8601String(),
+            ],
+        ]);
+    }
 }
