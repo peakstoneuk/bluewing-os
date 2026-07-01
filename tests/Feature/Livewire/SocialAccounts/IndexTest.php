@@ -53,3 +53,40 @@ test('non-owner cannot disconnect account', function () {
         ->call('deleteSocialAccount', $account->id)
         ->assertForbidden();
 });
+
+test('linkedin account shows reauthorise button and expiry status', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedin()->create([
+        'user_id' => $user->id,
+        'display_name' => 'Jane LinkedIn',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Index::class)
+        ->assertSee('Jane LinkedIn')
+        ->assertSee('Reauthorise')
+        ->assertSee('Access expires');
+});
+
+test('owner can reauthorise linkedin account from social accounts page', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedin()->create(['user_id' => $user->id]);
+
+    Livewire::actingAs($user)
+        ->test(Index::class)
+        ->call('reauthorizeLinkedIn', $account->id)
+        ->assertRedirect(route('social-accounts.linkedin-oauth-redirect'));
+
+    expect(session('linkedin_oauth_return_to'))->toBe(route('social-accounts.index'));
+});
+
+test('non-owner cannot reauthorise linkedin account', function () {
+    $owner = User::factory()->create();
+    $other = User::factory()->create();
+    $account = SocialAccount::factory()->linkedin()->create(['user_id' => $owner->id]);
+
+    Livewire::actingAs($other)
+        ->test(Index::class)
+        ->call('reauthorizeLinkedIn', $account->id)
+        ->assertForbidden();
+});

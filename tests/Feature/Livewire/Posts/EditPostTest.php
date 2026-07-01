@@ -82,7 +82,7 @@ test('creator can update a draft post', function () {
         ->set('body_text', 'Updated text')
         ->set('scheduled_for', now()->addDays(2)->format('Y-m-d\TH:i'))
         ->call('save', 'schedule')
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('posts.edit', $post));
 
     $post->refresh();
 
@@ -158,4 +158,97 @@ test('queued post shows view mode with info box and content', function () {
     // View mode: no Schedule or Save as Draft buttons (only Back to dashboard)
     $html = $component->html();
     expect($html)->not->toContain('Save as Draft');
+});
+
+test('opening editable post with expired linkedin target redirects to linkedin oauth', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedinExpired()->create(['user_id' => $user->id]);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Scheduled,
+        'scheduled_for' => now()->addDay(),
+    ]);
+
+    PostVariant::factory()->create([
+        'post_id' => $post->id,
+        'scope_type' => ScopeType::Default,
+        'body_text' => 'Scheduled LinkedIn post',
+    ]);
+
+    PostTarget::factory()->create([
+        'post_id' => $post->id,
+        'social_account_id' => $account->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(EditPost::class, ['post' => $post])
+        ->assertRedirect(route('social-accounts.linkedin-oauth-redirect'));
+
+    expect(session('linkedin_oauth_return_to'))->toBe(route('posts.edit', $post));
+});
+
+test('opening queued post with expired linkedin target does not redirect', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedinExpired()->create(['user_id' => $user->id]);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Queued,
+        'scheduled_for' => now()->addDay(),
+    ]);
+
+    PostVariant::factory()->create([
+        'post_id' => $post->id,
+        'scope_type' => ScopeType::Default,
+        'body_text' => 'Queued LinkedIn post',
+    ]);
+
+    PostTarget::factory()->create([
+        'post_id' => $post->id,
+        'social_account_id' => $account->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(EditPost::class, ['post' => $post])
+        ->assertSee('View Post')
+        ->assertNoRedirect();
+});
+
+test('saving editable post with linkedin token expiring before new schedule redirects to linkedin oauth', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedin()->create([
+        'user_id' => $user->id,
+        'credentials_encrypted' => [
+            'access_token' => 'linkedin-access-token',
+            'refresh_token' => null,
+            'expires_at' => now()->addDays(10)->toIso8601String(),
+        ],
+    ]);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Scheduled,
+        'scheduled_for' => now()->addWeek(),
+    ]);
+
+    PostVariant::factory()->create([
+        'post_id' => $post->id,
+        'scope_type' => ScopeType::Default,
+        'body_text' => 'LinkedIn post',
+    ]);
+
+    PostTarget::factory()->create([
+        'post_id' => $post->id,
+        'social_account_id' => $account->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(EditPost::class, ['post' => $post])
+        ->set('scheduled_for', now()->addDays(20)->format('Y-m-d\TH:i'))
+        ->call('save', 'schedule')
+        ->assertRedirect(route('social-accounts.linkedin-oauth-redirect'));
+
+    expect(session('message'))->toContain('scheduled successfully');
+    expect(session('linkedin_oauth_return_to'))->toBe(route('posts.edit', $post));
 });

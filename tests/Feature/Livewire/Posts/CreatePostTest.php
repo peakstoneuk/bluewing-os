@@ -118,3 +118,32 @@ test('cannot select account user has no editor access to', function () {
         ->call('save', 'draft')
         ->assertHasErrors('selected_accounts');
 });
+
+test('saving post with expired linkedin target redirects to linkedin oauth', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedinExpired()->create(['user_id' => $user->id]);
+
+    Livewire::actingAs($user)
+        ->test(CreatePost::class)
+        ->set('body_text', 'LinkedIn post')
+        ->set('scheduled_for', now()->addDay()->format('Y-m-d\TH:i'))
+        ->set('selected_accounts', [$account->id])
+        ->call('save', 'schedule')
+        ->assertRedirect(route('social-accounts.linkedin-oauth-redirect'));
+
+    expect(session('message'))->toContain('scheduled successfully');
+    expect(session('linkedin_oauth_return_to'))->toBe(route('dashboard'));
+});
+
+test('saving post with valid linkedin target redirects to dashboard', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedin()->create(['user_id' => $user->id]);
+
+    Livewire::actingAs($user)
+        ->test(CreatePost::class)
+        ->set('body_text', 'LinkedIn post')
+        ->set('scheduled_for', now()->addDay()->format('Y-m-d\TH:i'))
+        ->set('selected_accounts', [$account->id])
+        ->call('save', 'schedule')
+        ->assertRedirect(route('dashboard'));
+});

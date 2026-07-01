@@ -6,7 +6,10 @@ use App\Domain\Media\ValidateMediaForTargetsAction;
 use App\Domain\Posts\CreatePostAction;
 use App\Domain\Posts\PostData;
 use App\Domain\SocialAccounts\GetAccessibleAccountsQuery;
+use App\Domain\SocialAccounts\LinkedInTokenInspector;
 use App\Enums\PostStatus;
+use App\Livewire\Posts\Concerns\RedirectsForLinkedInReauthorization;
+use Carbon\Carbon;
 use App\Models\PostMedia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +23,7 @@ use Livewire\WithFileUploads;
 #[Title('Create Post')]
 class CreatePost extends Component
 {
+    use RedirectsForLinkedInReauthorization;
     use WithFileUploads;
 
     public string $scheduled_for = '';
@@ -81,6 +85,25 @@ class CreatePost extends Component
     {
         return collect($this->selectedProviders)
             ->contains(fn ($p) => $p->value === 'bluesky');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function linkedInAuthorizationWarnings(): array
+    {
+        $inspector = app(LinkedInTokenInspector::class);
+        $scheduledFor = $this->scheduled_for !== ''
+            ? Carbon::parse($this->scheduled_for)
+            : null;
+
+        return collect($this->accounts)
+            ->whereIn('id', $this->selected_accounts)
+            ->map(fn ($account) => $inspector->getAuthorizationWarning($account, $scheduledFor))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     #[Computed]
@@ -172,9 +195,8 @@ class CreatePost extends Component
         }
 
         $label = $status === PostStatus::Scheduled ? 'scheduled' : 'saved as draft';
-        session()->flash('message', "Post {$label} successfully.");
 
-        $this->redirect(route('dashboard'), navigate: true);
+        $this->finishPostSave($label, $this->selected_accounts, $this->scheduled_for);
     }
 
     public function render()

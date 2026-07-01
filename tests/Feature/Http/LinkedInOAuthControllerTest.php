@@ -110,6 +110,68 @@ test('successful callback stores linkedin account with encrypted credentials', f
     expect($creds['expires_at'])->not->toBeNull();
 });
 
+test('successful callback warns when linkedin omits refresh token', function () {
+    Http::fake([
+        'www.linkedin.com/oauth/v2/accessToken' => Http::response([
+            'access_token' => 'linkedin-access-token',
+            'expires_in' => 5184000,
+            'scope' => 'openid profile w_member_social',
+            'token_type' => 'Bearer',
+        ]),
+        'api.linkedin.com/v2/userinfo' => Http::response([
+            'sub' => 'member-456',
+            'name' => 'No Refresh Person',
+        ]),
+    ]);
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)
+        ->withSession(['linkedin_oauth_state' => 'valid-state'])
+        ->get(route('social-accounts.linkedin-oauth-callback', [
+            'state' => 'valid-state',
+            'code' => 'auth-code',
+        ]));
+
+    $response->assertRedirect(route('social-accounts.index'));
+    $response->assertSessionHas('warning');
+    $response->assertSessionHas('message');
+
+    $account = SocialAccount::where('user_id', $user->id)->first();
+    expect($account->credentials_encrypted['refresh_token'])->toBeNull();
+});
+
+test('successful callback returns to saved redirect url after reauthorization', function () {
+    Http::fake([
+        'www.linkedin.com/oauth/v2/accessToken' => Http::response([
+            'access_token' => 'linkedin-access-token',
+            'refresh_token' => 'linkedin-refresh-token',
+            'expires_in' => 3600,
+            'scope' => 'openid profile w_member_social',
+            'token_type' => 'Bearer',
+        ]),
+        'api.linkedin.com/v2/userinfo' => Http::response([
+            'sub' => 'member-789',
+            'name' => 'Return Home Person',
+        ]),
+    ]);
+
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)
+        ->withSession([
+            'linkedin_oauth_state' => 'valid-state',
+            'linkedin_oauth_return_to' => route('dashboard'),
+        ])
+        ->get(route('social-accounts.linkedin-oauth-callback', [
+            'state' => 'valid-state',
+            'code' => 'auth-code',
+        ]));
+
+    $response->assertRedirect(route('dashboard'));
+    $response->assertSessionHas('message');
+});
+
 test('callback handles token exchange failure', function () {
     Http::fake([
         'www.linkedin.com/oauth/v2/accessToken' => Http::response([

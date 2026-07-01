@@ -12,6 +12,9 @@
     @if (session('message'))
         <div class="mt-4 rounded-lg bg-success-50 p-4 text-success-700">{{ session('message') }}</div>
     @endif
+    @if (session('warning'))
+        <div class="mt-4 rounded-lg bg-warning-50 p-4 text-warning-800 dark:bg-warning-900/20 dark:text-warning-200">{{ session('warning') }}</div>
+    @endif
     @if (session('error'))
         <div class="mt-4 rounded-lg bg-danger-50 p-4 text-danger-700">{{ session('error') }}</div>
     @endif
@@ -66,8 +69,12 @@
                                 <span class="inline-flex items-center gap-1 rounded-full border border-zinc-200 px-2 py-0.5 text-xs dark:border-zinc-700">
                                     @if ($target->socialAccount->provider->value === 'x')
                                         <span class="font-bold">𝕏</span>
-                                    @else
+                                    @elseif ($target->socialAccount->provider->value === 'linkedin')
+                                        <span class="inline-flex size-3.5 items-center justify-center rounded-[1px] bg-[#0A66C2] text-[8px] font-bold text-white">in</span>
+                                    @elseif ($target->socialAccount->provider->value === 'bluesky')
                                         <span>🦋</span>
+                                    @else
+                                        <span class="text-zinc-400" title="{{ __('Unknown provider') }}">?</span>
                                     @endif
                                     {{ $target->socialAccount->display_name }}
                                     @if ($target->status === \App\Enums\PostTargetStatus::Sent)

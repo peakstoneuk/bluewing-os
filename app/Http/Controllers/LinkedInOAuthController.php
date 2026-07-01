@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\SocialAccounts\LinkedInTokenInspector;
 use App\Enums\Provider;
 use App\Models\SocialAccount;
 use Illuminate\Http\RedirectResponse;
@@ -101,6 +102,12 @@ class LinkedInOAuthController extends Controller
                 ->with('error', 'Failed to retrieve your LinkedIn profile. Please try again.');
         }
 
+        $wasConnected = SocialAccount::query()
+            ->where('provider', Provider::LinkedIn)
+            ->where('external_identifier', $userInfo['sub'])
+            ->where('user_id', $request->user()->id)
+            ->exists();
+
         SocialAccount::updateOrCreate(
             [
                 'provider' => Provider::LinkedIn,
@@ -122,9 +129,18 @@ class LinkedInOAuthController extends Controller
             ],
         );
 
-        return redirect()
-            ->route('social-accounts.index')
-            ->with('message', "LinkedIn account {$userInfo['name']} connected successfully.");
+        $returnTo = session()->pull('linkedin_oauth_return_to', route('social-accounts.index'));
+        $inspector = app(LinkedInTokenInspector::class);
+        $connectionWarning = $inspector->getConnectionWarning($tokens['refresh_token'] ?? null);
+
+        if ($connectionWarning !== null) {
+            session()->flash('warning', $connectionWarning);
+        }
+
+        $action = $wasConnected ? 'reauthorized' : 'connected';
+        session()->flash('message', "LinkedIn account {$userInfo['name']} {$action} successfully.");
+
+        return redirect()->to($returnTo);
     }
 
     /**

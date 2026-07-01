@@ -377,7 +377,7 @@ class LinkedInClient implements SocialProviderClient
     protected function tokenRefreshFailureMessage(array $credentials): string
     {
         if (empty($credentials['refresh_token'])) {
-            return 'No refresh token is stored for this LinkedIn account. Please disconnect and reconnect the account.';
+            return 'Your LinkedIn access token has expired and LinkedIn did not provide a refresh token for this app. Please reconnect your LinkedIn account.';
         }
 
         $clientId = config('services.linkedin.client_id');

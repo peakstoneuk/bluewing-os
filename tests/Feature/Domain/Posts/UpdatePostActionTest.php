@@ -276,3 +276,44 @@ test('update rejects media exceeding cross-post limit', function () {
         mediaIds: [$media->id],
     ));
 })->throws(ValidationException::class, 'exceeds the maximum size');
+
+test('update rejects default text exceeding bluesky grapheme limit', function () {
+    $user = User::factory()->create();
+    $bsAccount = SocialAccount::factory()->bluesky()->create(['user_id' => $user->id]);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Draft,
+    ]);
+    PostVariant::factory()->create(['post_id' => $post->id, 'scope_type' => ScopeType::Default]);
+
+    $action = new UpdatePostAction;
+
+    $action->execute($post, $user, new PostData(
+        scheduledFor: now()->addHour()->toDateTimeString(),
+        bodyText: str_repeat('a', 301),
+        targetAccountIds: [$bsAccount->id],
+    ));
+})->throws(ValidationException::class, 'Bluesky posts are limited to 300 graphemes');
+
+test('update allows long default text when valid bluesky provider override is set', function () {
+    $user = User::factory()->create();
+    $bsAccount = SocialAccount::factory()->bluesky()->create(['user_id' => $user->id]);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Draft,
+    ]);
+    PostVariant::factory()->create(['post_id' => $post->id, 'scope_type' => ScopeType::Default]);
+
+    $action = new UpdatePostAction;
+
+    $updated = $action->execute($post, $user, new PostData(
+        scheduledFor: now()->addHour()->toDateTimeString(),
+        bodyText: str_repeat('a', 301),
+        targetAccountIds: [$bsAccount->id],
+        providerOverrides: ['bluesky' => 'Short Bluesky text'],
+    ));
+
+    expect($updated->variants)->toHaveCount(2);
+});
