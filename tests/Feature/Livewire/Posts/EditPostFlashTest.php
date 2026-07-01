@@ -33,7 +33,7 @@ test('edit post save shows success message without redirecting', function () {
         'social_account_id' => $account->id,
     ]);
 
-    Livewire::actingAs($user)
+    $component = Livewire::actingAs($user)
         ->test(EditPost::class, ['post' => $post])
         ->set('body_text', 'Updated text')
         ->set('scheduled_for', now()->addDays(2)->format('Y-m-d\TH:i'))
@@ -42,4 +42,6 @@ test('edit post save shows success message without redirecting', function () {
         ->assertSet('flashMessage', 'Post saved as draft successfully.')
         ->assertNoRedirect()
         ->assertSee('Post saved as draft successfully.');
+
+    expect(substr_count($component->html(), 'Post saved as draft successfully.'))->toBe(1);
 });

@@ -261,14 +261,12 @@ class EditPost extends Component
     {
         $this->flashMessage = $message;
         $this->flashType = 'success';
-        session()->flash('message', $message);
     }
 
     protected function flashWarning(string $message): void
     {
         $this->flashMessage = $message;
         $this->flashType = 'warning';
-        session()->flash('warning', $message);
     }
 
     protected function flashError(string $message): void

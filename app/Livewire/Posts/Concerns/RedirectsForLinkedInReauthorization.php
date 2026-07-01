@@ -18,13 +18,15 @@ trait RedirectsForLinkedInReauthorization
         ?string $returnTo = null,
         bool $completeWithRedirect = true,
     ): void {
-        $this->flashSuccess("Post {$label} successfully.");
+        $message = "Post {$label} successfully.";
+        $this->flashSuccess($message);
 
         $this->attemptLinkedInReauthorizationRedirect(
             $selectedAccountIds,
             $scheduledFor,
             $returnTo ?? route('dashboard'),
             completeWithRedirect: $completeWithRedirect,
+            successMessage: $message,
         );
     }
 
@@ -46,6 +48,7 @@ trait RedirectsForLinkedInReauthorization
         string $scheduledFor,
         string $returnTo,
         bool $completeWithRedirect = false,
+        ?string $successMessage = null,
     ): void {
         if ($scheduledFor === '') {
             if ($completeWithRedirect) {
@@ -68,6 +71,10 @@ trait RedirectsForLinkedInReauthorization
         if ($ownedAccount !== null) {
             session()->put('linkedin_oauth_return_to', $returnTo);
 
+            if ($successMessage !== null) {
+                session()->flash('message', $successMessage);
+            }
+
             $this->redirect(route('social-accounts.linkedin-oauth-redirect'), navigate: false);
 
             return;
@@ -84,6 +91,10 @@ trait RedirectsForLinkedInReauthorization
         }
 
         if ($completeWithRedirect) {
+            if ($successMessage !== null) {
+                session()->flash('message', $successMessage);
+            }
+
             $this->redirect($returnTo, navigate: true);
         }
     }
