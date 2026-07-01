@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\User;
+use App\Support\UserTimezone;
 use Illuminate\Validation\Rule;
 
 trait ProfileValidationRules
@@ -18,6 +19,25 @@ trait ProfileValidationRules
             'name' => $this->nameRules(),
             'email' => $this->emailRules($userId),
         ];
+    }
+
+    /**
+     * @return array<string, array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>>
+     */
+    protected function profileWithTimezoneRules(?int $userId = null): array
+    {
+        return [
+            ...$this->profileRules($userId),
+            'timezone' => $this->timezoneRules(),
+        ];
+    }
+
+    /**
+     * @return array<int, \Illuminate\Contracts\Validation\Rule|array<mixed>|string>
+     */
+    protected function timezoneRules(): array
+    {
+        return ['required', 'string', Rule::in(UserTimezone::identifiers())];
     }
 
     /**

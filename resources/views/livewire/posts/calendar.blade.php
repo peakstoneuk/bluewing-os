@@ -83,9 +83,9 @@
                                         href="{{ route('posts.edit', $post) }}"
                                         wire:navigate
                                         class="block truncate"
-                                        title="{{ $post->scheduled_for->format('g:i A') }}"
+                                        title="{{ auth()->user()->formatDateTime($post->scheduled_for, 'g:i A') }}"
                                     >
-                                        {{ $post->scheduled_for->format('g:ia') }}
+                                        {{ auth()->user()->formatDateTime($post->scheduled_for, 'g:ia') }}
                                         {{ Str::limit($post->variants->where('scope_type', \App\Enums\ScopeType::Default)->first()?->body_text ?? '', 20) }}
                                     </a>
                                     <x-posts.target-chips :post="$post" />

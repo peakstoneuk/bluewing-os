@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\UserTimezone;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -22,6 +24,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'timezone',
         'password',
     ];
 
@@ -50,6 +53,25 @@ class User extends Authenticatable
             ->take(2)
             ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
+    }
+
+    public function timezone(): string
+    {
+        return UserTimezone::normalize($this->timezone);
+    }
+
+    public function timezoneLabel(): string
+    {
+        return UserTimezone::label($this->timezone());
+    }
+
+    public function formatDateTime(?CarbonInterface $datetime, string $format = 'M j, Y g:i A'): string
+    {
+        if ($datetime === null) {
+            return '';
+        }
+
+        return UserTimezone::format($datetime, $this->timezone(), $format);
     }
 
     public function socialAccounts(): HasMany

@@ -3,7 +3,7 @@
 
     <flux:heading class="sr-only">{{ __('Profile Settings') }}</flux:heading>
 
-    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-settings.layout :heading="__('Profile')" :subheading="__('Update your name, email address, and timezone')">
         <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
             <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
 
@@ -27,6 +27,21 @@
                         @endif
                     </div>
                 @endif
+            </div>
+
+            <div>
+                <flux:select wire:model="timezone" :label="__('Timezone')">
+                    @foreach ($this->timezoneGroups as $region => $timezones)
+                        <optgroup label="{{ str_replace('_', ' ', $region) }}">
+                            @foreach ($timezones as $timezoneOption)
+                                <option value="{{ $timezoneOption }}">{{ str_replace('_', ' ', $timezoneOption) }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </flux:select>
+                <flux:text class="mt-2 text-zinc-600 dark:text-zinc-400">
+                    {{ __('Scheduled post times are shown and entered in this timezone.') }}
+                </flux:text>
             </div>
 
             <div class="flex items-center gap-4">

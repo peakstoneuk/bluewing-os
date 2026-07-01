@@ -33,8 +33,10 @@ class Calendar extends Component
 
     public function mount(): void
     {
-        $this->year = now()->year;
-        $this->month = now()->month;
+        $now = now(Auth::user()->timezone());
+
+        $this->year = $now->year;
+        $this->month = $now->month;
     }
 
     public function updatedFilterProvider(): void
@@ -50,28 +52,30 @@ class Calendar extends Component
 
     public function previousMonth(): void
     {
-        $date = Carbon::create($this->year, $this->month, 1)->subMonth();
+        $date = $this->monthAnchor()->subMonth();
         $this->year = $date->year;
         $this->month = $date->month;
     }
 
     public function nextMonth(): void
     {
-        $date = Carbon::create($this->year, $this->month, 1)->addMonth();
+        $date = $this->monthAnchor()->addMonth();
         $this->year = $date->year;
         $this->month = $date->month;
     }
 
     public function goToToday(): void
     {
-        $this->year = now()->year;
-        $this->month = now()->month;
+        $now = now(Auth::user()->timezone());
+
+        $this->year = $now->year;
+        $this->month = $now->month;
     }
 
     #[Computed]
     public function monthLabel(): string
     {
-        return Carbon::create($this->year, $this->month, 1)->format('F Y');
+        return $this->monthAnchor()->format('F Y');
     }
 
     #[Computed]
@@ -101,15 +105,15 @@ class Calendar extends Component
     #[Computed]
     public function calendarWeeks(): array
     {
-        $start = Carbon::create($this->year, $this->month, 1)->startOfWeek(Carbon::SUNDAY);
-        $end = Carbon::create($this->year, $this->month, 1)->endOfMonth()->endOfWeek(Carbon::SATURDAY);
+        $timezone = Auth::user()->timezone();
+        $today = now($timezone);
 
-        $monthStart = Carbon::create($this->year, $this->month, 1)->startOfDay();
-        $monthEnd = Carbon::create($this->year, $this->month, 1)->endOfMonth()->endOfDay();
+        $start = $this->monthAnchor()->copy()->startOfWeek(Carbon::SUNDAY);
+        $end = $this->monthAnchor()->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
 
         $listQuery = (new ListPostsQuery(Auth::user()))
-            ->from($monthStart->toDateTimeString())
-            ->to($monthEnd->toDateTimeString())
+            ->from($start->copy()->utc()->toDateTimeString())
+            ->to($end->copy()->endOfDay()->utc()->toDateTimeString())
             ->provider($this->filterProvider ?: null)
             ->account($this->filterAccount ?: null);
 
@@ -117,7 +121,7 @@ class Calendar extends Component
             ->query()
             ->orderBy('scheduled_for')
             ->get()
-            ->groupBy(fn (Post $post) => $post->scheduled_for->format('Y-m-d'));
+            ->groupBy(fn (Post $post) => $post->scheduled_for->copy()->timezone($timezone)->format('Y-m-d'));
 
         $weeks = [];
         $current = $start->copy();
@@ -129,7 +133,7 @@ class Calendar extends Component
                 $week[] = [
                     'date' => $current->copy(),
                     'isCurrentMonth' => $current->month === $this->month,
-                    'isToday' => $current->isToday(),
+                    'isToday' => $current->isSameDay($today),
                     'posts' => $posts->get($dateKey, collect()),
                 ];
                 $current->addDay();
@@ -161,6 +165,11 @@ class Calendar extends Component
             'total' => $total,
             'overflow' => max(0, $total - $limit),
         ];
+    }
+
+    protected function monthAnchor(): Carbon
+    {
+        return Carbon::create($this->year, $this->month, 1, 0, 0, 0, Auth::user()->timezone());
     }
 
     public function render()
