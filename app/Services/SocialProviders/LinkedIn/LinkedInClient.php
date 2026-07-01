@@ -125,7 +125,10 @@ class LinkedInClient implements SocialProviderClient
             ]);
 
         if (! $response->successful()) {
-            Log::warning('LinkedIn image initialize upload failed', ['status' => $response->status()]);
+            Log::warning('LinkedIn image initialize upload failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
 
             return null;
         }
@@ -145,12 +148,16 @@ class LinkedInClient implements SocialProviderClient
             return null;
         }
 
-        $upload = Http::withHeaders(['Content-Type' => $item->mimeType])
+        $upload = Http::withToken($credentials['access_token'])
+            ->withHeaders(['Content-Type' => $item->mimeType])
             ->withBody($item->contents, $item->mimeType)
             ->put($uploadUrl);
 
         if (! $upload->successful()) {
-            Log::warning('LinkedIn image binary upload failed', ['status' => $upload->status()]);
+            Log::warning('LinkedIn image binary upload failed', [
+                'status' => $upload->status(),
+                'body' => $upload->body(),
+            ]);
 
             return null;
         }
@@ -266,15 +273,7 @@ class LinkedInClient implements SocialProviderClient
         ];
 
         if (! empty($mediaUrns)) {
-            $payload['content'] = [
-                'media' => array_map(
-                    fn (array $item) => array_filter([
-                        'id' => $item['urn'],
-                        'altText' => $item['alt_text'],
-                    ], fn ($value) => $value !== null && $value !== ''),
-                    $mediaUrns
-                ),
-            ];
+            $payload['content'] = $this->buildMediaContent($mediaUrns);
         }
 
         $response = Http::withToken($credentials['access_token'])
@@ -296,14 +295,51 @@ class LinkedInClient implements SocialProviderClient
     }
 
     /**
+     * @param  array<int, array{urn: string, alt_text: string|null}>  $mediaUrns
+     * @return array<string, mixed>
+     */
+    protected function buildMediaContent(array $mediaUrns): array
+    {
+        $items = array_map(
+            fn (array $item) => array_filter([
+                'id' => $item['urn'],
+                'altText' => $item['alt_text'],
+            ], fn ($value) => $value !== null && $value !== ''),
+            $mediaUrns,
+        );
+
+        if (count($items) === 1) {
+            return ['media' => $items[0]];
+        }
+
+        return [
+            'multiImage' => [
+                'images' => $items,
+            ],
+        ];
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function restHeaders(): array
     {
         return [
-            'LinkedIn-Version' => (string) config('services.linkedin.version', now()->format('Ym')),
+            'LinkedIn-Version' => $this->apiVersion(),
             'X-Restli-Protocol-Version' => '2.0.0',
         ];
+    }
+
+    protected function apiVersion(): string
+    {
+        $configured = config('services.linkedin.version');
+
+        if (! empty($configured)) {
+            return (string) $configured;
+        }
+
+        // LinkedIn releases versioned APIs monthly; the current month may not exist yet.
+        return now()->subMonth()->format('Ym');
     }
 
     protected function tokenIsExpired(array $credentials): bool
