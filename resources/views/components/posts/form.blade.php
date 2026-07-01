@@ -4,6 +4,7 @@
     'providers',
     'editable' => true,
     'scheduledFor' => '',
+    'scheduledAt' => null,
     'bodyText' => '',
     'providerOverrides' => [],
     'accountOverrides' => [],
@@ -20,13 +21,15 @@
         @if ($editable)
             <flux:input
                 wire:model="scheduled_for"
-                :label="__('Scheduled For')"
+                :label="__('Scheduled For') . ' (' . auth()->user()->timezoneLabel() . ')'"
                 type="datetime-local"
                 required
             />
         @else
             <flux:heading size="sm" class="mb-1">{{ __('Scheduled For') }}</flux:heading>
-            <flux:text class="text-zinc-600 dark:text-zinc-400">{{ $scheduledFor ? \Carbon\Carbon::parse($scheduledFor)->format('M j, Y g:i A') : '—' }}</flux:text>
+            <flux:text class="text-zinc-600 dark:text-zinc-400">
+                <x-localized-datetime :datetime="$scheduledAt" empty="—" />
+            </flux:text>
         @endif
     </div>
 

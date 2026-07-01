@@ -9,10 +9,11 @@ use App\Domain\SocialAccounts\GetAccessibleAccountsQuery;
 use App\Domain\SocialAccounts\LinkedInTokenInspector;
 use App\Enums\PostStatus;
 use App\Enums\ScopeType;
+use App\Livewire\Posts\Concerns\InteractsWithScheduledForTimezone;
 use App\Livewire\Posts\Concerns\RedirectsForLinkedInReauthorization;
 use App\Models\Post;
 use App\Models\PostMedia;
-use Carbon\Carbon;
+use App\Support\UserTimezone;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -25,6 +26,7 @@ use Livewire\WithFileUploads;
 #[Title('Edit Post')]
 class EditPost extends Component
 {
+    use InteractsWithScheduledForTimezone;
     use RedirectsForLinkedInReauthorization;
     use WithFileUploads;
 
@@ -62,7 +64,9 @@ class EditPost extends Component
 
         $this->post = $post->load(['variants', 'targets', 'media']);
 
-        $this->scheduled_for = $post->scheduled_for?->format('Y-m-d\TH:i') ?? '';
+        $this->scheduled_for = $post->scheduled_for
+            ? UserTimezone::toDatetimeLocal($post->scheduled_for, Auth::user()->timezone())
+            : '';
         $this->selected_accounts = $post->targets->pluck('social_account_id')->map(fn ($id) => (int) $id)->all();
 
         $defaultVariant = $post->variants->where('scope_type', ScopeType::Default)->first();
@@ -126,9 +130,7 @@ class EditPost extends Component
     public function linkedInAuthorizationWarnings(): array
     {
         $inspector = app(LinkedInTokenInspector::class);
-        $scheduledFor = $this->scheduled_for !== ''
-            ? Carbon::parse($this->scheduled_for)
-            : null;
+        $scheduledFor = $this->scheduledForAsUtc();
 
         return collect($this->accounts)
             ->whereIn('id', $this->selected_accounts)
@@ -211,10 +213,12 @@ class EditPost extends Component
 
         $this->validate([
             'body_text' => 'required|string|max:5000',
-            'scheduled_for' => 'required|date|after:now',
+            'scheduled_for' => 'required|date',
             'selected_accounts' => 'required|array|min:1',
             'selected_accounts.*' => 'exists:social_accounts,id',
         ]);
+
+        $this->assertScheduledForIsInFuture();
 
         $status = $action === 'schedule' ? PostStatus::Scheduled : PostStatus::Draft;
 
@@ -223,7 +227,7 @@ class EditPost extends Component
                 $this->post,
                 Auth::user(),
                 new PostData(
-                    scheduledFor: $this->scheduled_for,
+                    scheduledFor: $this->scheduledForUtcString(),
                     bodyText: $this->body_text,
                     targetAccountIds: $this->selected_accounts,
                     providerOverrides: $this->provider_overrides,
@@ -247,7 +251,7 @@ class EditPost extends Component
         $this->finishPostSave(
             $label,
             $this->selected_accounts,
-            $this->scheduled_for,
+            $this->scheduledForUtcString(),
             route('posts.edit', $this->post),
             completeWithRedirect: false,
         );

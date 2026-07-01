@@ -22,6 +22,7 @@
             :providers="$this->providers"
             :editable="$this->canEdit"
             :scheduled-for="$this->scheduled_for"
+            :scheduled-at="$post->scheduled_for"
             :body-text="$this->body_text"
             :provider-overrides="$this->provider_overrides"
             :account-overrides="$this->account_overrides"

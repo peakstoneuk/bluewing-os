@@ -21,7 +21,7 @@
                         <div class="mb-2 flex flex-wrap items-center gap-2">
                             <x-posts.status-badge :status="$post->status" />
                             <span class="text-sm text-zinc-500">
-                                {{ $post->scheduled_for?->format('M j, Y g:i A') ?? 'No date' }}
+                                <x-localized-datetime :datetime="$post->scheduled_for" />
                             </span>
                         </div>
                         <p class="truncate text-zinc-900 dark:text-zinc-100">

@@ -8,9 +8,10 @@ use App\Domain\Posts\PostData;
 use App\Domain\SocialAccounts\GetAccessibleAccountsQuery;
 use App\Domain\SocialAccounts\LinkedInTokenInspector;
 use App\Enums\PostStatus;
+use App\Livewire\Posts\Concerns\InteractsWithScheduledForTimezone;
 use App\Livewire\Posts\Concerns\RedirectsForLinkedInReauthorization;
-use Carbon\Carbon;
 use App\Models\PostMedia;
+use App\Support\UserTimezone;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -23,6 +24,7 @@ use Livewire\WithFileUploads;
 #[Title('Create Post')]
 class CreatePost extends Component
 {
+    use InteractsWithScheduledForTimezone;
     use RedirectsForLinkedInReauthorization;
     use WithFileUploads;
 
@@ -50,7 +52,10 @@ class CreatePost extends Component
 
     public function mount(): void
     {
-        $this->scheduled_for = now()->addHour()->format('Y-m-d\TH:i');
+        $this->scheduled_for = UserTimezone::toDatetimeLocal(
+            now('UTC')->addHour(),
+            Auth::user()->timezone(),
+        );
     }
 
     #[Computed]
@@ -94,9 +99,7 @@ class CreatePost extends Component
     public function linkedInAuthorizationWarnings(): array
     {
         $inspector = app(LinkedInTokenInspector::class);
-        $scheduledFor = $this->scheduled_for !== ''
-            ? Carbon::parse($this->scheduled_for)
-            : null;
+        $scheduledFor = $this->scheduledForAsUtc();
 
         return collect($this->accounts)
             ->whereIn('id', $this->selected_accounts)
@@ -164,10 +167,12 @@ class CreatePost extends Component
     {
         $this->validate([
             'body_text' => 'required|string|max:5000',
-            'scheduled_for' => 'required|date|after:now',
+            'scheduled_for' => 'required|date',
             'selected_accounts' => 'required|array|min:1',
             'selected_accounts.*' => 'exists:social_accounts,id',
         ]);
+
+        $this->assertScheduledForIsInFuture();
 
         $status = $action === 'schedule' ? PostStatus::Scheduled : PostStatus::Draft;
 
@@ -175,7 +180,7 @@ class CreatePost extends Component
             app(CreatePostAction::class)->execute(
                 Auth::user(),
                 new PostData(
-                    scheduledFor: $this->scheduled_for,
+                    scheduledFor: $this->scheduledForUtcString(),
                     bodyText: $this->body_text,
                     targetAccountIds: $this->selected_accounts,
                     providerOverrides: $this->provider_overrides,
@@ -196,7 +201,7 @@ class CreatePost extends Component
 
         $label = $status === PostStatus::Scheduled ? 'scheduled' : 'saved as draft';
 
-        $this->finishPostSave($label, $this->selected_accounts, $this->scheduled_for);
+        $this->finishPostSave($label, $this->selected_accounts, $this->scheduledForUtcString());
     }
 
     public function render()

@@ -3,6 +3,7 @@
 namespace App\Livewire\Settings;
 
 use App\Concerns\ProfileValidationRules;
+use App\Support\UserTimezone;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -17,6 +18,8 @@ class Profile extends Component
 
     public string $email = '';
 
+    public string $timezone = 'UTC';
+
     /**
      * Mount the component.
      */
@@ -24,6 +27,7 @@ class Profile extends Component
     {
         $this->name = Auth::user()->name;
         $this->email = Auth::user()->email;
+        $this->timezone = Auth::user()->timezone();
     }
 
     /**
@@ -33,7 +37,7 @@ class Profile extends Component
     {
         $user = Auth::user();
 
-        $validated = $this->validate($this->profileRules($user->id));
+        $validated = $this->validate($this->profileWithTimezoneRules($user->id));
 
         $user->fill($validated);
 
@@ -62,6 +66,12 @@ class Profile extends Component
         $user->sendEmailVerificationNotification();
 
         Session::flash('status', 'verification-link-sent');
+    }
+
+    #[Computed]
+    public function timezoneGroups(): array
+    {
+        return UserTimezone::groupedIdentifiers();
     }
 
     #[Computed]
