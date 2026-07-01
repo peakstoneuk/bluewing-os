@@ -8,11 +8,11 @@ use App\Domain\Posts\UpdatePostAction;
 use App\Domain\SocialAccounts\GetAccessibleAccountsQuery;
 use App\Domain\SocialAccounts\LinkedInTokenInspector;
 use App\Enums\PostStatus;
-use App\Livewire\Posts\Concerns\RedirectsForLinkedInReauthorization;
-use Carbon\Carbon;
 use App\Enums\ScopeType;
+use App\Livewire\Posts\Concerns\RedirectsForLinkedInReauthorization;
 use App\Models\Post;
 use App\Models\PostMedia;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -51,6 +51,10 @@ class EditPost extends Component
 
     /** @var array Temporary file uploads from Livewire */
     public $uploads = [];
+
+    public ?string $flashMessage = null;
+
+    public ?string $flashType = null;
 
     public function mount(Post $post): void
     {
@@ -196,8 +200,11 @@ class EditPost extends Component
 
     public function save(string $action = 'draft'): void
     {
+        $this->flashMessage = null;
+        $this->flashType = null;
+
         if (! $this->canEdit) {
-            session()->flash('error', 'This post can no longer be edited.');
+            $this->flashError('This post can no longer be edited.');
 
             return;
         }
@@ -242,7 +249,28 @@ class EditPost extends Component
             $this->selected_accounts,
             $this->scheduled_for,
             route('posts.edit', $this->post),
+            completeWithRedirect: false,
         );
+    }
+
+    protected function flashSuccess(string $message): void
+    {
+        $this->flashMessage = $message;
+        $this->flashType = 'success';
+        session()->flash('message', $message);
+    }
+
+    protected function flashWarning(string $message): void
+    {
+        $this->flashMessage = $message;
+        $this->flashType = 'warning';
+        session()->flash('warning', $message);
+    }
+
+    protected function flashError(string $message): void
+    {
+        $this->flashMessage = $message;
+        $this->flashType = 'error';
     }
 
     public function render()

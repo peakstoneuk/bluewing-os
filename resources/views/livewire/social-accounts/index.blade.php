@@ -2,18 +2,6 @@
     <flux:heading size="xl">{{ __('Social Accounts') }}</flux:heading>
     <flux:subheading>{{ __('Manage your connected social media accounts.') }}</flux:subheading>
 
-    @if (session('message'))
-        <div class="mt-4 rounded-lg bg-success-50 p-4 text-success-700">
-            {{ session('message') }}
-        </div>
-    @endif
-
-    @if (session('warning'))
-        <div class="mt-4 rounded-lg bg-warning-50 p-4 text-warning-800 dark:bg-warning-900/20 dark:text-warning-200">
-            {{ session('warning') }}
-        </div>
-    @endif
-
     <div class="mt-6 flex flex-wrap gap-3">
         <flux:button variant="primary" :href="route('social-accounts.connect-x')" wire:navigate>
             {{ __('Connect X Account') }}

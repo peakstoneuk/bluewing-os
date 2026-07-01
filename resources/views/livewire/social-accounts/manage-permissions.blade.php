@@ -2,12 +2,6 @@
     <flux:heading size="xl">{{ __('Manage Permissions') }}</flux:heading>
     <flux:subheading>{{ $account->display_name }} - {{ $account->provider->label() }}</flux:subheading>
 
-    @if (session('message'))
-        <div class="mt-4 rounded-lg bg-success-50 p-4 text-success-700">
-            {{ session('message') }}
-        </div>
-    @endif
-
     <div class="mt-6 max-w-lg">
         <flux:heading size="sm">{{ __('Grant Access') }}</flux:heading>
         <flux:subheading class="mb-4">{{ __('Invite a user by email address.') }}</flux:subheading>

@@ -9,45 +9,8 @@
         </flux:button>
     </div>
 
-    @if (session('message'))
-        <div class="mt-4 rounded-lg bg-success-50 p-4 text-success-700">{{ session('message') }}</div>
-    @endif
-    @if (session('warning'))
-        <div class="mt-4 rounded-lg bg-warning-50 p-4 text-warning-800 dark:bg-warning-900/20 dark:text-warning-200">{{ session('warning') }}</div>
-    @endif
-    @if (session('error'))
-        <div class="mt-4 rounded-lg bg-danger-50 p-4 text-danger-700">{{ session('error') }}</div>
-    @endif
-
     {{-- Filters --}}
     <div class="mt-6 flex flex-wrap gap-3">
-        <div class="w-40">
-            <flux:select wire:model.live="status" :label="__('Status')">
-                <flux:select.option value="">{{ __('All Statuses') }}</flux:select.option>
-                @foreach ($statuses as $s)
-                    <flux:select.option value="{{ $s->value }}">{{ $s->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
-
-        <div class="w-40">
-            <flux:select wire:model.live="provider" :label="__('Provider')">
-                <flux:select.option value="">{{ __('All Providers') }}</flux:select.option>
-                @foreach ($providers as $p)
-                    <flux:select.option value="{{ $p->value }}">{{ $p->label() }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
-
-        <div class="w-48">
-            <flux:select wire:model.live="account" :label="__('Account')">
-                <flux:select.option value="">{{ __('All Accounts') }}</flux:select.option>
-                @foreach ($accounts as $a)
-                    <flux:select.option value="{{ $a->id }}">{{ $a->display_name }}</flux:select.option>
-                @endforeach
-            </flux:select>
-        </div>
-    </div>
 
     {{-- Posts List --}}
     <div class="mt-6 space-y-3">

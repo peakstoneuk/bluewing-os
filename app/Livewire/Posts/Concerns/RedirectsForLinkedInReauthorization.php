@@ -11,16 +11,31 @@ trait RedirectsForLinkedInReauthorization
     /**
      * @param  array<int>  $selectedAccountIds
      */
-    protected function finishPostSave(string $label, array $selectedAccountIds, string $scheduledFor, ?string $returnTo = null): void
-    {
-        session()->flash('message', "Post {$label} successfully.");
+    protected function finishPostSave(
+        string $label,
+        array $selectedAccountIds,
+        string $scheduledFor,
+        ?string $returnTo = null,
+        bool $completeWithRedirect = true,
+    ): void {
+        $this->flashSuccess("Post {$label} successfully.");
 
         $this->attemptLinkedInReauthorizationRedirect(
             $selectedAccountIds,
             $scheduledFor,
             $returnTo ?? route('dashboard'),
-            completeWithRedirect: true,
+            completeWithRedirect: $completeWithRedirect,
         );
+    }
+
+    protected function flashSuccess(string $message): void
+    {
+        session()->flash('message', $message);
+    }
+
+    protected function flashWarning(string $message): void
+    {
+        session()->flash('warning', $message);
     }
 
     /**
@@ -63,8 +78,7 @@ trait RedirectsForLinkedInReauthorization
 
         if ($sharedAccounts->isNotEmpty()) {
             $names = $sharedAccounts->pluck('display_name')->join(', ');
-            session()->flash(
-                'warning',
+            $this->flashWarning(
                 "The LinkedIn account(s) {$names} need reauthorization before the scheduled publish time. Ask the account owner to reconnect.",
             );
         }

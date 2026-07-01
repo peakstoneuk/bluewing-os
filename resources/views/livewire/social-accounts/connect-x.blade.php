@@ -2,14 +2,6 @@
     <flux:heading size="xl">{{ __('Connect X (Twitter) Account') }}</flux:heading>
     <flux:subheading>{{ __('Connect your X account using OAuth 2.0 to allow Blue Wing to post on your behalf.') }}</flux:subheading>
 
-    @if (session('error'))
-        <div class="mt-4 rounded-lg bg-danger-50 p-4 text-danger-700">{{ session('error') }}</div>
-    @endif
-
-    @if (session('message'))
-        <div class="mt-4 rounded-lg bg-success-50 p-4 text-success-700">{{ session('message') }}</div>
-    @endif
-
     <div class="mt-6 max-w-lg space-y-6">
         @if ($isConfigured)
             <div class="rounded-lg border border-zinc-200 p-6 dark:border-zinc-700">
