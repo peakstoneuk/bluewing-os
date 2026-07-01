@@ -102,6 +102,12 @@ class LinkedInOAuthController extends Controller
                 ->with('error', 'Failed to retrieve your LinkedIn profile. Please try again.');
         }
 
+        $wasConnected = SocialAccount::query()
+            ->where('provider', Provider::LinkedIn)
+            ->where('external_identifier', $userInfo['sub'])
+            ->where('user_id', $request->user()->id)
+            ->exists();
+
         SocialAccount::updateOrCreate(
             [
                 'provider' => Provider::LinkedIn,
@@ -131,7 +137,8 @@ class LinkedInOAuthController extends Controller
             session()->flash('warning', $connectionWarning);
         }
 
-        session()->flash('message', "LinkedIn account {$userInfo['name']} connected successfully.");
+        $action = $wasConnected ? 'reauthorized' : 'connected';
+        session()->flash('message', "LinkedIn account {$userInfo['name']} {$action} successfully.");
 
         return redirect()->to($returnTo);
     }

@@ -73,3 +73,23 @@ test('first owned account needing reauthorization ignores shared accounts', func
 
     expect($result?->id)->toBe($ownedAccount->id);
 });
+
+test('accountNeedsAttention is true when linkedin token is expired', function () {
+    $account = SocialAccount::factory()->linkedinExpired()->create();
+    $inspector = new LinkedInTokenInspector;
+
+    expect($inspector->accountNeedsAttention($account))->toBeTrue();
+});
+
+test('accountNeedsAttention is true when linkedin token expires within 14 days', function () {
+    $account = SocialAccount::factory()->linkedin()->create([
+        'credentials_encrypted' => [
+            'access_token' => 'token',
+            'refresh_token' => null,
+            'expires_at' => now()->addDays(7)->toIso8601String(),
+        ],
+    ]);
+    $inspector = new LinkedInTokenInspector;
+
+    expect($inspector->accountNeedsAttention($account))->toBeTrue();
+});

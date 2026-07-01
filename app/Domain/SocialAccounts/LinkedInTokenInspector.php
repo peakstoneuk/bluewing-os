@@ -147,13 +147,38 @@ class LinkedInTokenInspector
         $expiresAt = $this->tokenExpiresAt($credentials);
 
         if ($expiresAt === null) {
-            return 'No refresh token — reconnect periodically to keep posting working.';
+            return 'No refresh token — reauthorise periodically to keep posting working.';
         }
 
         if ($this->isExpired($credentials)) {
-            return "Access expired {$expiresAt->format('M j, Y')}. Reconnect to resume posting.";
+            return "Access expired {$expiresAt->format('M j, Y g:i A')}. Reauthorise to resume posting.";
         }
 
-        return "Access expires {$expiresAt->format('M j, Y')}. Reconnect before then to avoid failed posts.";
+        return "Access expires {$expiresAt->format('M j, Y g:i A')}. Reauthorise before then to avoid failed posts.";
+    }
+
+    public function accountNeedsAttention(SocialAccount $account): bool
+    {
+        if ($account->provider !== Provider::LinkedIn) {
+            return false;
+        }
+
+        $credentials = $account->credentials_encrypted;
+
+        if (! $this->lacksProgrammaticRefresh($credentials)) {
+            return false;
+        }
+
+        if ($this->isExpired($credentials)) {
+            return true;
+        }
+
+        $expiresAt = $this->tokenExpiresAt($credentials);
+
+        if ($expiresAt === null) {
+            return false;
+        }
+
+        return $expiresAt->copy()->subDays(14)->isPast();
     }
 }
