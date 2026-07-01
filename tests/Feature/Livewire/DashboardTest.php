@@ -12,6 +12,33 @@ use Livewire\Livewire;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
+test('dashboard truncates long post text', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->x()->create(['user_id' => $user->id]);
+
+    $longText = str_repeat('a', 300);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Scheduled,
+    ]);
+
+    PostVariant::factory()->create([
+        'post_id' => $post->id,
+        'scope_type' => ScopeType::Default,
+        'body_text' => $longText,
+    ]);
+
+    PostTarget::factory()->create([
+        'post_id' => $post->id,
+        'social_account_id' => $account->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(Dashboard::class)
+        ->assertSee(Str::limit($longText, 200));
+});
+
 test('dashboard shows user posts', function () {
     $user = User::factory()->create();
     $account = SocialAccount::factory()->x()->create(['user_id' => $user->id]);

@@ -15,7 +15,10 @@
     {{-- Posts List --}}
     <div class="mt-6 space-y-3">
         @forelse ($posts as $post)
-            <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+            @php
+                $bodyText = $post->defaultVariant()?->body_text;
+            @endphp
+            <div class="overflow-hidden rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0 flex-1">
                         <div class="mb-2 flex flex-wrap items-center gap-2">
@@ -24,8 +27,11 @@
                                 <x-localized-datetime :datetime="$post->scheduled_for" />
                             </span>
                         </div>
-                        <p class="truncate text-zinc-900 dark:text-zinc-100">
-                            {{ $post->variants->where('scope_type', \App\Enums\ScopeType::Default)->first()?->body_text ?? '(no default text)' }}
+                        <p
+                            class="line-clamp-2 break-words text-zinc-900 dark:text-zinc-100"
+                            @if ($bodyText) title="{{ $bodyText }}" @endif
+                        >
+                            {{ $bodyText ? Str::limit($bodyText, 200) : '(no default text)' }}
                         </p>
                         <div class="mt-2 flex flex-wrap gap-1.5">
                             @foreach ($post->targets as $target)
