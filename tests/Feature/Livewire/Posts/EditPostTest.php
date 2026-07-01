@@ -82,7 +82,9 @@ test('creator can update a draft post', function () {
         ->set('body_text', 'Updated text')
         ->set('scheduled_for', now()->addDays(2)->format('Y-m-d\TH:i'))
         ->call('save', 'schedule')
-        ->assertRedirect(route('posts.edit', $post));
+        ->assertHasNoErrors()
+        ->assertSet('flashMessage', 'Post scheduled successfully.')
+        ->assertNoRedirect();
 
     $post->refresh();
 

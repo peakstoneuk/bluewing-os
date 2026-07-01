@@ -1,6 +1,8 @@
 <div>
     <flux:heading size="xl">{{ $this->canEdit ? __('Edit Post') : __('View Post') }}</flux:heading>
 
+    <x-flash-messages :message="$flashMessage" :type="$flashType" class="mt-4" />
+
     @if (! $this->canEdit)
         <div class="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50" role="alert">
             <p class="font-medium text-zinc-900 dark:text-zinc-100">
