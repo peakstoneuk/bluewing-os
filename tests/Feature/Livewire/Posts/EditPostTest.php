@@ -181,9 +181,40 @@ test('opening editable post with expired linkedin target redirects to linkedin o
         'social_account_id' => $account->id,
     ]);
 
-    Livewire::actingAs($user)
-        ->test(EditPost::class, ['post' => $post])
+    $this->actingAs($user)
+        ->get(route('posts.edit', $post))
         ->assertRedirect(route('social-accounts.linkedin-oauth-redirect'));
+
+    expect(session('linkedin_oauth_return_to'))->toBe(route('posts.edit', $post));
+});
+
+test('wire navigate request for editable post with expired linkedin returns client redirect page', function () {
+    $user = User::factory()->create();
+    $account = SocialAccount::factory()->linkedinExpired()->create(['user_id' => $user->id]);
+
+    $post = Post::factory()->create([
+        'user_id' => $user->id,
+        'status' => PostStatus::Scheduled,
+        'scheduled_for' => now()->addDay(),
+    ]);
+
+    PostVariant::factory()->create([
+        'post_id' => $post->id,
+        'scope_type' => ScopeType::Default,
+        'body_text' => 'Scheduled LinkedIn post',
+    ]);
+
+    PostTarget::factory()->create([
+        'post_id' => $post->id,
+        'social_account_id' => $account->id,
+    ]);
+
+    $this->actingAs($user)
+        ->withHeader('X-Livewire-Navigate', '1')
+        ->get(route('posts.edit', $post))
+        ->assertOk()
+        ->assertSee('window.location.replace', false)
+        ->assertSee('social-accounts\/connect\/linkedin\/redirect', false);
 
     expect(session('linkedin_oauth_return_to'))->toBe(route('posts.edit', $post));
 });

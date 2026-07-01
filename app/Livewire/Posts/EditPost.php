@@ -79,14 +79,6 @@ class EditPost extends Component
                 $this->alt_texts[$media->id] = $media->alt_text;
             }
         }
-
-        if (in_array($post->status, [PostStatus::Draft, PostStatus::Scheduled], true) && $this->scheduled_for !== '') {
-            $this->attemptLinkedInReauthorizationRedirect(
-                $this->selected_accounts,
-                $this->scheduled_for,
-                route('posts.edit', $this->post),
-            );
-        }
     }
 
     #[Computed]

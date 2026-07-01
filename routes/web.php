@@ -1,7 +1,8 @@
 <?php
 
-use App\Http\Controllers\XOAuthController;
 use App\Http\Controllers\LinkedInOAuthController;
+use App\Http\Controllers\XOAuthController;
+use App\Http\Middleware\RedirectEditablePostToLinkedInOAuth;
 use App\Livewire\Dashboard;
 use App\Livewire\Posts;
 use App\Livewire\SocialAccounts;
@@ -15,7 +16,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('dashboard', Dashboard::class)->name('dashboard');
 
     Route::livewire('posts/create', Posts\CreatePost::class)->name('posts.create');
-    Route::livewire('posts/{post}/edit', Posts\EditPost::class)->name('posts.edit');
+    Route::livewire('posts/{post}/edit', Posts\EditPost::class)
+        ->middleware(RedirectEditablePostToLinkedInOAuth::class)
+        ->name('posts.edit');
     Route::livewire('calendar', Posts\Calendar::class)->name('posts.calendar');
 
     Route::livewire('social-accounts', SocialAccounts\Index::class)
