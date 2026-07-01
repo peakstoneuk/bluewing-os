@@ -79,7 +79,9 @@ test('edit page saves updated alt text', function () {
         ->set('alt_texts', [$media->id => 'Updated alt'])
         ->set('scheduled_for', now()->addDays(2)->format('Y-m-d\TH:i'))
         ->call('save', 'draft')
-        ->assertRedirect(route('posts.edit', $post));
+        ->assertHasNoErrors()
+        ->assertSet('flashMessage', 'Post saved as draft successfully.')
+        ->assertNoRedirect();
 
     expect($media->fresh()->alt_text)->toBe('Updated alt');
 });
@@ -116,7 +118,9 @@ test('edit page can add new media to post', function () {
         ->set('media_ids', [$newMedia->id])
         ->set('scheduled_for', now()->addDays(2)->format('Y-m-d\TH:i'))
         ->call('save', 'draft')
-        ->assertRedirect(route('posts.edit', $post));
+        ->assertHasNoErrors()
+        ->assertSet('flashMessage', 'Post saved as draft successfully.')
+        ->assertNoRedirect();
 
     expect($newMedia->fresh()->post_id)->toBe($post->id);
     expect($post->fresh()->media)->toHaveCount(1);
@@ -154,7 +158,9 @@ test('edit page can remove media from post', function () {
         ->set('media_ids', [])
         ->set('scheduled_for', now()->addDays(2)->format('Y-m-d\TH:i'))
         ->call('save', 'draft')
-        ->assertRedirect(route('posts.edit', $post));
+        ->assertHasNoErrors()
+        ->assertSet('flashMessage', 'Post saved as draft successfully.')
+        ->assertNoRedirect();
 
     expect($media->fresh()->post_id)->toBeNull();
     expect($post->fresh()->media)->toHaveCount(0);
