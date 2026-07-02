@@ -276,22 +276,107 @@ class LinkedInClient implements SocialProviderClient
             $payload['content'] = $this->buildMediaContent($mediaUrns);
         }
 
+        $url = $this->apiBaseUrl().'/rest/posts';
+
+        Log::info('LinkedIn create post request', [
+            'url' => $url,
+            'headers' => $this->restHeaders(),
+            'payload' => $payload,
+        ]);
+
         $response = Http::withToken($credentials['access_token'])
             ->withHeaders($this->restHeaders())
-            ->post($this->apiBaseUrl().'/rest/posts', $payload);
+            ->post($url, $payload);
+
+        Log::info('LinkedIn create post response', $this->formatPostCreateResponseForLog($response));
 
         if ($response->successful()) {
-            $id = $response->json('id') ?? $response->json('value.id');
+            $postId = $this->extractCreatedPostId($response);
 
-            return empty($id) ? null : (string) $id;
+            if ($postId !== null) {
+                return $postId;
+            }
+
+            if ($response->status() === 201) {
+                Log::warning('LinkedIn create post returned 201 without a post ID; treating as success', [
+                    'response' => $this->formatPostCreateResponseForLog($response),
+                ]);
+
+                return '';
+            }
+
+            Log::warning('LinkedIn create post succeeded but no post ID could be extracted', [
+                'response' => $this->formatPostCreateResponseForLog($response),
+            ]);
+
+            return null;
         }
 
         Log::warning('LinkedIn create post failed', [
-            'status' => $response->status(),
-            'body' => $response->body(),
+            'response' => $this->formatPostCreateResponseForLog($response),
         ]);
 
         return null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function formatPostCreateResponseForLog(\Illuminate\Http\Client\Response $response): array
+    {
+        return [
+            'status' => $response->status(),
+            'headers' => $response->headers(),
+            'body' => $response->body(),
+        ];
+    }
+
+    protected function extractCreatedPostId(\Illuminate\Http\Client\Response $response): ?string
+    {
+        $candidates = [
+            $response->header('x-restli-id'),
+            $this->extractIdFromLocationHeader($response->header('Location')),
+            $response->json('id'),
+            $response->json('value.id'),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $id = $this->normalizePostId($candidate);
+
+            if ($id !== null) {
+                return $id;
+            }
+        }
+
+        return null;
+    }
+
+    protected function extractIdFromLocationHeader(?string $location): ?string
+    {
+        if (! filled($location)) {
+            return null;
+        }
+
+        $path = parse_url($location, PHP_URL_PATH);
+
+        if (! is_string($path) || $path === '') {
+            return null;
+        }
+
+        $segment = urldecode(basename($path));
+
+        return str_starts_with($segment, 'urn:li:') ? $segment : null;
+    }
+
+    protected function normalizePostId(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $id = trim(urldecode($value));
+
+        return filled($id) ? $id : null;
     }
 
     /**

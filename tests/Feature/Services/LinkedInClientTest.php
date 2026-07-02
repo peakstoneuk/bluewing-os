@@ -4,6 +4,7 @@ use App\Enums\MediaType;
 use App\Services\SocialProviders\Contracts\ProviderMediaItem;
 use App\Services\SocialProviders\LinkedIn\LinkedInClient;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
     config([
@@ -16,8 +17,8 @@ beforeEach(function () {
 
 test('publishes linkedin text post with bearer token', function () {
     Http::fake([
-        'api.linkedin.com/rest/posts' => Http::response([
-            'id' => 'urn:li:share:1234',
+        'api.linkedin.com/rest/posts' => Http::response('', 201, [
+            'x-restli-id' => 'urn:li:share:1234',
         ]),
     ]);
 
@@ -184,6 +185,84 @@ test('publishes linkedin post with multiple images using multiImage content', fu
             && $request['content']['multiImage']['images'][0]['id'] === 'urn:li:image:1'
             && $request['content']['multiImage']['images'][1]['id'] === 'urn:li:image:2';
     });
+});
+
+test('reads linkedin post id from response body when header is absent', function () {
+    Http::fake([
+        'api.linkedin.com/rest/posts' => Http::response([
+            'id' => 'urn:li:share:body-id',
+        ], 201),
+    ]);
+
+    $client = new LinkedInClient;
+
+    $result = $client->publishText('member-123', [
+        'access_token' => 'valid-linkedin-token',
+    ], 'Fallback ID test');
+
+    expect($result->success)->toBeTrue();
+    expect($result->externalPostId)->toBe('urn:li:share:body-id');
+});
+
+test('reads linkedin post id from location header', function () {
+    Http::fake([
+        'api.linkedin.com/rest/posts' => Http::response('', 201, [
+            'Location' => 'https://api.linkedin.com/rest/posts/'.urlencode('urn:li:share:location-id'),
+        ]),
+    ]);
+
+    $client = new LinkedInClient;
+
+    $result = $client->publishText('member-123', [
+        'access_token' => 'valid-linkedin-token',
+    ], 'Location header test');
+
+    expect($result->success)->toBeTrue();
+    expect($result->externalPostId)->toBe('urn:li:share:location-id');
+});
+
+test('treats linkedin 201 without post id as success', function () {
+    Log::spy();
+
+    Http::fake([
+        'api.linkedin.com/rest/posts' => Http::response('', 201),
+    ]);
+
+    $client = new LinkedInClient;
+
+    $result = $client->publishText('member-123', [
+        'access_token' => 'valid-linkedin-token',
+    ], 'Created without ID');
+
+    expect($result->success)->toBeTrue();
+    expect($result->externalPostId)->toBe('');
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn (string $message) => str_contains($message, '201 without a post ID'));
+});
+
+test('logs linkedin create post request and response payloads', function () {
+    Log::spy();
+
+    Http::fake([
+        'api.linkedin.com/rest/posts' => Http::response('', 201, [
+            'x-restli-id' => 'urn:li:share:logged',
+        ]),
+    ]);
+
+    $client = new LinkedInClient;
+
+    $client->publishText('member-123', [
+        'access_token' => 'valid-linkedin-token',
+    ], 'Logging test');
+
+    Log::shouldHaveReceived('info')
+        ->withArgs(fn (string $message, array $context) => $message === 'LinkedIn create post request'
+            && ($context['payload']['commentary'] ?? null) === 'Logging test');
+
+    Log::shouldHaveReceived('info')
+        ->withArgs(fn (string $message, array $context) => $message === 'LinkedIn create post response'
+            && ($context['status'] ?? null) === 201);
 });
 
 test('defaults linkedin api version to previous month when not configured', function () {
